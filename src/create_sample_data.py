@@ -1,7 +1,7 @@
 """
 Script to generate sample gym member data.
 """
-
+import pandas as pd
 import sys
 from pathlib import Path
 
@@ -41,17 +41,17 @@ def main():
     print(f"  Earliest: {users_df['REGISTRATION_DATE'].min()}")
     print(f"  Latest: {users_df['REGISTRATION_DATE'].max()}")
     
-    # Save to output folder
-    output_dir = project_root / 'output'
-    output_dir.mkdir(exist_ok=True)
+    # Save to data folder
+    data_dir = project_root / 'data'
+    data_dir.mkdir(exist_ok=True)
     
     # Save users table
-    users_path = output_dir / 'gym_users.csv'
+    users_path = data_dir / 'user_information.csv'
     users_df.to_csv(users_path, index=False)
     print(f"\nUsers data saved to: {users_path}")
     
     # Save visits table
-    visits_path = output_dir / 'gym_visits.csv'
+    visits_path = data_dir / 'user_visits.csv'
     visits_df.to_csv(visits_path, index=False)
     print(f"Visits data saved to: {visits_path}")
 
