@@ -8,17 +8,18 @@ from typing import Tuple
 import pandas as pd
 
 
-def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def generate_data(num_users: int = 300, visits_per_user: tuple = (5, 20), churn_rate: float = 0.35) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Generate synthetic gym member data with realistic patterns.
     
     Args:
-        num_users: Number of unique users to generate (default: 100)
+        num_users: Number of unique users to generate (default: 300)
         visits_per_user: Tuple of (min, max) visits per user (default: 5-20)
+        churn_rate: Percentage of users who have churned (default: 0.35 = 35%)
     
     Returns:
         Tuple of (users_df, visits_df):
-        - users_df: Static user data (USER_ID, REGISTRATION_DATE, AGE, GENDER, ZUMBA, BODY_PUMP, PILATES, SPINNING)
+        - users_df: Static user data (USER_ID, REGISTRATION_DATE, AGE, GENDER, ZUMBA, BODY_PUMP, PILATES, SPINNING, MEMBERSHIP_END_DATE)
         - visits_df: Visit records (USER_ID, ENTRY_TIME, EXIT_TIME)
     """
     random.seed(42)  # For reproducibility
@@ -66,6 +67,25 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
             microsecond=0
         )
         
+        # Determine if user has churned
+        has_churned = random.random() < churn_rate
+        membership_end_date = None
+        
+        if has_churned:
+            # Generate membership end date (first day of a month, after registration)
+            # Churned users should have left at least 1 month ago
+            min_membership_months = 1  # At least 1 month of membership
+            months_since_registration = (today.year - registration_date.year) * 12 + (today.month - registration_date.month)
+            
+            if months_since_registration > min_membership_months:
+                # Random end month between (registration + 1 month) and (today - 1 month)
+                months_of_membership = random.randint(min_membership_months, max(min_membership_months, months_since_registration - 1))
+                
+                # Calculate end date (first day of the end month)
+                end_year = registration_date.year + (registration_date.month + months_of_membership - 1) // 12
+                end_month = (registration_date.month + months_of_membership - 1) % 12 + 1
+                membership_end_date = datetime(end_year, end_month, 1, 0, 0, 0)
+        
         # Randomly assign class preferences (~20% chance each, users can have all, some, or none)
         zumba = random.random() < 0.20
         body_pump = random.random() < 0.20
@@ -76,6 +96,7 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
         user_records.append({
             'USER_ID': user_id,
             'REGISTRATION_DATE': registration_date,
+            'MEMBERSHIP_END_DATE': membership_end_date,
             'AGE': age,
             'GENDER': gender,
             'ZUMBA': zumba,
@@ -87,13 +108,19 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
         # Generate visits for this user
         num_visits = random.randint(visits_per_user[0], visits_per_user[1])
         
-        # Generate visit dates after registration
-        days_available = (today - registration_date).days
+        # Determine the last possible visit date
+        if membership_end_date:
+            last_visit_date = membership_end_date - timedelta(days=1)  # Last visit before membership ends
+        else:
+            last_visit_date = today
+        
+        # Generate visit dates after registration but before membership end (if churned)
+        days_available = (last_visit_date - registration_date).days
         if days_available < 1:
             days_available = 1
         
         for _ in range(num_visits):
-            # Random day after registration (but before today)
+            # Random day after registration (but before last_visit_date)
             days_after_reg = random.randint(1, max(1, days_available - 1))
             visit_date = registration_date + timedelta(days=days_after_reg)
             

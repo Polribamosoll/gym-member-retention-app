@@ -17,7 +17,7 @@ def main():
     print("Generating gym member data...")
     
     # Generate data (returns two tables)
-    users_df, visits_df = generate_data(num_users=100, visits_per_user=(5, 20))
+    users_df, visits_df = generate_data(num_users=300, visits_per_user=(5, 20))
     
     print(f"Generated {len(users_df)} users and {len(visits_df)} visit records")
     
@@ -28,6 +28,13 @@ def main():
     # Show visits sample
     print("\n=== VISITS TABLE (sample) ===")
     print(visits_df.head(10))
+    
+    # Show churn statistics
+    print("\n=== CHURN STATISTICS ===")
+    churned_users = users_df['MEMBERSHIP_END_DATE'].notna().sum()
+    active_users = users_df['MEMBERSHIP_END_DATE'].isna().sum()
+    print(f"Churned users: {churned_users} ({churned_users/len(users_df)*100:.1f}%)")
+    print(f"Active users:  {active_users} ({active_users/len(users_df)*100:.1f}%)")
     
     # Show class enrollment stats
     print("\n=== CLASS ENROLLMENT ===")
