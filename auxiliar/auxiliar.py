@@ -65,7 +65,6 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
             second=0,
             microsecond=0
         )
-        registration_str = registration_date.strftime('%Y-%m-%d-%H-%M')
         
         # Randomly assign class preferences (~20% chance each, users can have all, some, or none)
         zumba = random.random() < 0.20
@@ -76,7 +75,7 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
         # Add user record (static data)
         user_records.append({
             'USER_ID': user_id,
-            'REGISTRATION_DATE': registration_str,
+            'REGISTRATION_DATE': registration_date,
             'AGE': age,
             'GENDER': gender,
             'ZUMBA': zumba,
@@ -122,15 +121,11 @@ def generate_data(num_users: int = 100, visits_per_user: tuple = (5, 20)) -> Tup
             if exit_time > max_exit:
                 exit_time = max_exit
             
-            # Format dates as required: YYYY-MM-DD-HH-MM
-            entry_str = entry_time.strftime('%Y-%m-%d-%H-%M')
-            exit_str = exit_time.strftime('%Y-%m-%d-%H-%M')
-            
-            # Add visit record
+            # Add visit record (using datetime objects)
             visit_records.append({
                 'USER_ID': user_id,
-                'ENTRY_TIME': entry_str,
-                'EXIT_TIME': exit_str
+                'ENTRY_TIME': entry_time,
+                'EXIT_TIME': exit_time
             })
     
     # Create DataFrames
