@@ -1,5 +1,5 @@
 """
-Auxiliar module for generating synthetic gym member data.
+Auxiliar module for generating and processing gym member data.
 """
 
 import random
@@ -163,3 +163,151 @@ def generate_data(num_users: int = 300, visits_per_user: tuple = (5, 20), churn_
     visits_df = visits_df.sort_values('ENTRY_TIME').reset_index(drop=True)
     
     return users_df, visits_df
+
+
+def engineer_features(users_df: pd.DataFrame, visits_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Create features for churn prediction from user and visit data.
+    
+    Args:
+        users_df: DataFrame with user information (USER_ID, REGISTRATION_DATE, 
+                  MEMBERSHIP_END_DATE, AGE, GENDER, class enrollments)
+        visits_df: DataFrame with visit records (USER_ID, ENTRY_TIME, EXIT_TIME)
+    
+    Returns:
+        DataFrame with engineered features for each user, including:
+        - Visit frequency metrics (total_visits, visits_per_month)
+        - Recency metrics (days_since_last_visit)
+        - Session patterns (avg_session_duration_min, avg_days_between_visits)
+        - Time preferences (pct_peak_hour_visits, pct_weekend_visits)
+        - Trend indicators (visit_frequency_trend)
+        - Demographics (AGE, GENDER, class enrollments)
+    """
+    # Reference date (use today for active users, end date for churned)
+    reference_date = datetime.now()
+    
+    # Calculate visit-based features for each user
+    visit_features = []
+    
+    for user_id in users_df['USER_ID']:
+        user_visits = visits_df[visits_df['USER_ID'] == user_id].copy()
+        user_info = users_df[users_df['USER_ID'] == user_id].iloc[0]
+        
+        # Determine reference date for this user
+        if pd.notna(user_info['MEMBERSHIP_END_DATE']):
+            ref_date = user_info['MEMBERSHIP_END_DATE']
+            churned = 1
+        else:
+            ref_date = reference_date
+            churned = 0
+        
+        registration_date = user_info['REGISTRATION_DATE']
+        membership_duration_days = (ref_date - registration_date).days
+        
+        if len(user_visits) == 0:
+            visit_features.append({
+                'USER_ID': user_id,
+                'CHURNED': churned,
+                'total_visits': 0,
+                'visits_per_month': 0,
+                'avg_session_duration_min': 0,
+                'days_since_last_visit': membership_duration_days,
+                'avg_days_between_visits': 0,
+                'std_days_between_visits': 0,
+                'visits_last_30_days': 0,
+                'visits_last_60_days': 0,
+                'visits_last_90_days': 0,
+                'pct_peak_hour_visits': 0,
+                'pct_weekend_visits': 0,
+                'visit_frequency_trend': 0,
+                'membership_duration_months': membership_duration_days / 30
+            })
+            continue
+        
+        # Sort visits by time
+        user_visits = user_visits.sort_values('ENTRY_TIME')
+        
+        # Total visits
+        total_visits = len(user_visits)
+        
+        # Visits per month
+        months_active = max(1, membership_duration_days / 30)
+        visits_per_month = total_visits / months_active
+        
+        # Session duration
+        user_visits['duration_min'] = (user_visits['EXIT_TIME'] - user_visits['ENTRY_TIME']).dt.total_seconds() / 60
+        avg_session_duration = user_visits['duration_min'].mean()
+        
+        # Days since last visit (from reference date)
+        last_visit = user_visits['ENTRY_TIME'].max()
+        days_since_last_visit = (ref_date - last_visit).days
+        
+        # Days between visits
+        if len(user_visits) > 1:
+            user_visits['days_since_prev'] = user_visits['ENTRY_TIME'].diff().dt.days
+            avg_days_between = user_visits['days_since_prev'].mean()
+            std_days_between = user_visits['days_since_prev'].std()
+        else:
+            avg_days_between = 0
+            std_days_between = 0
+        
+        # Visits in last X days (before reference date)
+        visits_last_30 = len(user_visits[user_visits['ENTRY_TIME'] >= ref_date - timedelta(days=30)])
+        visits_last_60 = len(user_visits[user_visits['ENTRY_TIME'] >= ref_date - timedelta(days=60)])
+        visits_last_90 = len(user_visits[user_visits['ENTRY_TIME'] >= ref_date - timedelta(days=90)])
+        
+        # Peak hour visits (5pm-8pm)
+        user_visits['hour'] = user_visits['ENTRY_TIME'].dt.hour
+        peak_visits = len(user_visits[(user_visits['hour'] >= 17) & (user_visits['hour'] < 20)])
+        pct_peak_hour = peak_visits / total_visits if total_visits > 0 else 0
+        
+        # Weekend visits
+        user_visits['weekday'] = user_visits['ENTRY_TIME'].dt.weekday
+        weekend_visits = len(user_visits[user_visits['weekday'] >= 5])
+        pct_weekend = weekend_visits / total_visits if total_visits > 0 else 0
+        
+        # Visit frequency trend (compare first half vs second half of membership)
+        mid_date = registration_date + timedelta(days=membership_duration_days / 2)
+        first_half_visits = len(user_visits[user_visits['ENTRY_TIME'] < mid_date])
+        second_half_visits = len(user_visits[user_visits['ENTRY_TIME'] >= mid_date])
+        
+        if first_half_visits > 0:
+            visit_frequency_trend = (second_half_visits - first_half_visits) / first_half_visits
+        else:
+            visit_frequency_trend = 0
+        
+        visit_features.append({
+            'USER_ID': user_id,
+            'CHURNED': churned,
+            'total_visits': total_visits,
+            'visits_per_month': visits_per_month,
+            'avg_session_duration_min': avg_session_duration,
+            'days_since_last_visit': days_since_last_visit,
+            'avg_days_between_visits': avg_days_between if not pd.isna(avg_days_between) else 0,
+            'std_days_between_visits': std_days_between if not pd.isna(std_days_between) else 0,
+            'visits_last_30_days': visits_last_30,
+            'visits_last_60_days': visits_last_60,
+            'visits_last_90_days': visits_last_90,
+            'pct_peak_hour_visits': pct_peak_hour,
+            'pct_weekend_visits': pct_weekend,
+            'visit_frequency_trend': visit_frequency_trend,
+            'membership_duration_months': membership_duration_days / 30
+        })
+    
+    features_df = pd.DataFrame(visit_features)
+    
+    # Merge with user demographics
+    user_demographics = users_df[['USER_ID', 'AGE', 'GENDER', 'ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING']].copy()
+    features_df = features_df.merge(user_demographics, on='USER_ID')
+    
+    # Encode gender
+    features_df['GENDER'] = (features_df['GENDER'] == 'M').astype(int)
+    
+    # Convert boolean columns to int
+    for col in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING']:
+        features_df[col] = features_df[col].astype(int)
+    
+    # Count total classes enrolled
+    features_df['num_classes_enrolled'] = features_df[['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING']].sum(axis=1)
+    
+    return features_df
