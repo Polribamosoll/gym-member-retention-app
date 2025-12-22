@@ -20,36 +20,63 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def login_page():
-    st.sidebar.title("Login / Register")
-    
-    choice = st.sidebar.radio("Go to", ["Login", "Register"])
+    st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #B3D4FF;
+        color: black;
+    }
+    div.stButton > button:hover {
+        background-color: #84B0F5;
+        color: black;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    # Centering the content
+    col1, col2, col3 = st.columns([1, 2, 1])
 
-    if choice == "Login":
-        st.sidebar.subheader("Login to the App")
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type="password")
+    with col2:
+        st.markdown("<h1 style='text-align: center; color: #6495ED; font-size: 3.5em;'>GYM CHURN PREDICTOR</h1>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center; color: #4b5563; font-size: 2em;'>Login or Register</h2>", unsafe_allow_html=True)
+
+        login_register_container = st.container()
+        with login_register_container:
+            choice = st.radio("Choose an option", ["Login", "Register"], horizontal=True, label_visibility="collapsed")
+
+            if choice == "Login":
+                st.markdown("---")
+                username = st.text_input("**Username**")
+                password = st.text_input("**Password**", type="password")
+                
+                if st.button("Login", use_container_width=True):
+                    hashed_password = hash_password(password)
+                    if username in USERS and USERS[username] == hashed_password:
+                        st.session_state["logged_in"] = True
+                        st.session_state["username"] = username
+                        st.success(f"Welcome {username}!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid Username or Password")
+            
+            elif choice == "Register":
+                st.markdown("---")
+                st.subheader("Create a New Account")
+                new_username = st.text_input("**New Username**")
+                new_password = st.text_input("**New Password**", type="password")
+                confirm_password = st.text_input("**Confirm Password**", type="password")
+                
+                if st.button("Register", use_container_width=True):
+                    if new_password != confirm_password:
+                        st.error("Passwords do not match.")
+                    elif new_username in USERS:
+                        st.error("Username already exists. Please choose a different one.")
+                    else:
+                        USERS[new_username] = hash_password(new_password)
+                        st.success("Account created successfully! Please login.")
+                        st.balloons()
         
-        if st.sidebar.button("Login"):
-            hashed_password = hash_password(password)
-            if username in USERS and USERS[username] == hashed_password:
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = username
-                st.success(f"Welcome {username}!")
-                st.rerun()
-            else:
-                st.error("Invalid Username or Password")
-    
-    elif choice == "Register":
-        st.sidebar.subheader("Create a New Account")
-        new_username = st.sidebar.text_input("New Username")
-        new_password = st.sidebar.text_input("New Password", type="password")
-        
-        if st.sidebar.button("Register"):
-            if new_username in USERS:
-                st.error("Username already exists. Please choose a different one.")
-            else:
-                USERS[new_username] = hash_password(new_password)
-                st.success("Account created successfully! Please login.")
+        # Adding some spacing at the bottom
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
 def main_app():
     st.title("Gym Churn Predictor Dashboard")
