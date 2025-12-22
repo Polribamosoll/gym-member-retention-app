@@ -88,12 +88,25 @@ def main_app():
     visits_df = pd.read_csv(data_dir / 'user_visits.csv', parse_dates=['ENTRY_TIME', 'EXIT_TIME'])
 
     st.subheader("Data Overview")
-    st.write(f"Total Users: {len(users_df)}")
-    st.write(f"Total Visits: {len(visits_df)}")
-    st.write(f"Churned Users: {users_df['MEMBERSHIP_END_DATE'].notna().sum()}")
-    st.write(f"Active Users: {users_df['MEMBERSHIP_END_DATE'].isna().sum()}")
+    total_users = len(users_df)
+    total_visits = len(visits_df)
+    churned_users = users_df['MEMBERSHIP_END_DATE'].notna().sum()
+    active_users = users_df['MEMBERSHIP_END_DATE'].isna().sum()
+    churn_rate = (churned_users / total_users) * 100 if total_users > 0 else 0
 
-    st.subheader("Engineer Features")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        st.metric(label="Total Users", value=total_users)
+    with col2:
+        st.metric(label="Total Visits", value=total_visits)
+    with col3:
+        st.metric(label="Active Users", value=active_users)
+    with col4:
+        st.metric(label="Churned Users", value=churned_users)
+    with col5:
+        st.metric(label="Churn Rate", value=f"{churn_rate:.2f}%")
+
+    st.subheader("Features used to Predict Churn")
     features_df = engineer_features(users_df, visits_df)
     st.write(f"Features created: {features_df.shape}")
     st.dataframe(features_df.head())
@@ -110,16 +123,6 @@ def main_app():
         save_model(model, str(model_path))
         st.success("New model trained and saved!")
 
-    st.subheader("Model Performance")
-    # For a newly trained model, we'd have X_test and y_test from train_churn_model
-    # For a loaded model, we'd need to split features_df to get test set or use a pre-saved test set.
-    # For simplicity, re-splitting here for consistent evaluation display.
-    _, X_test, y_test = train_churn_model(features_df) # This re-splits, not ideal but for dashboard demo
-
-    results = evaluate_model(model, X_test, y_test)
-    st.text("Classification Report:")
-    st.code(results['classification_report'])
-    st.write(f"ROC-AUC Score: {results['roc_auc_score']:.3f}")
 
     st.subheader("Feature Importance")
     importance_df = get_feature_importance(model)
