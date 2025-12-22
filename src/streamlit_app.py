@@ -56,7 +56,7 @@ def main_app():
     st.write(f"Welcome, {st.session_state['username']}!")
 
     # --- Load Data ---
-    data_dir = Path.cwd().parent / 'data'
+    data_dir = Path.cwd() / 'data'
     users_df = pd.read_csv(data_dir / 'user_information.csv', parse_dates=['REGISTRATION_DATE', 'MEMBERSHIP_END_DATE'])
     visits_df = pd.read_csv(data_dir / 'user_visits.csv', parse_dates=['ENTRY_TIME', 'EXIT_TIME'])
 
@@ -79,6 +79,7 @@ def main_app():
     else:
         st.warning("No trained model found. Training a new model now...")
         model, X_test, y_test = train_churn_model(features_df)
+        model_path.parent.mkdir(parents=True, exist_ok=True)
         save_model(model, str(model_path))
         st.success("New model trained and saved!")
 
