@@ -138,7 +138,7 @@ def predict_churn_risk(
         labels=['Low', 'Medium', 'High']
     )
     
-    return users[['USER_ID', 'churn_risk', 'risk_level']].sort_values('churn_risk', ascending=False)
+    return users.sort_values('churn_risk', ascending=False)
 
 
 def save_model(model: RandomForestClassifier, filepath: str) -> None:

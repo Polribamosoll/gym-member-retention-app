@@ -120,7 +120,35 @@ def main_app():
     st.write("Risk Distribution (Active Users):")
     st.dataframe(risk_df['risk_level'].value_counts())
     st.write("Top 10 At-Risk Users:")
-    st.dataframe(risk_df.head(10))
+    # Define a mapping for more readable column names
+    column_name_mapping = {
+        'CUSTOMER_ID': 'Customer ID',
+        'AGE': 'Age',
+        'GENDER': 'Gender',
+        'MEMBERSHIP_TYPE': 'Membership Type',
+        'MONTHLY_PRICE': 'Monthly Price',
+        'CONTRACT_LENGTH': 'Contract Length',
+        'REGISTRATION_DATE': 'Registration Date',
+        'CHURNED': 'Churned',
+        'visits_per_month': 'Visits per Month',
+        'days_since_last_visit': 'Days Since Last Visit',
+        'avg_session_duration_min': 'Avg Session Duration (min)',
+        'visit_frequency_trend': 'Visit Frequency Trend',
+        'num_classes_enrolled': 'Num Classes Enrolled',
+        'churn_risk_score': 'Churn Risk Score',
+        'risk_level': 'Risk Level'
+    }
+    
+    # Rename columns and display with no index
+    def highlight_risk(row):
+        if row['Risk Level'] == 'High':
+            return ['background-color: #FFDDDD'] * len(row)  # Soft red
+        elif row['Risk Level'] == 'Medium':
+            return ['background-color: #FFEEDD'] * len(row)  # Soft orange
+        else:
+            return [''] * len(row)
+
+    st.dataframe(risk_df.head(10).rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
