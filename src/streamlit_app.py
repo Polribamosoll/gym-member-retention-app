@@ -104,7 +104,12 @@ def main_app():
     with col4:
         st.metric(label="Churned Users", value=churned_users)
     with col5:
-        st.metric(label="Churn Rate", value=f"{churn_rate:.2f}%")
+        color = "green"
+        if churn_rate >= 10:
+            color = "red"
+        elif churn_rate >= 5:
+            color = "orange"
+        st.markdown(f"<p style='text-align: center; color: black; font-size: 1em; margin-bottom: 0px;'>Churn Rate</p><h2 style='text-align: center; color: {color}; font-size: 2em; margin-top: 0px;'>{churn_rate:.2f}%</h2>", unsafe_allow_html=True)
 
     st.subheader("Features used to Predict Churn")
     features_df = engineer_features(users_df, visits_df)
