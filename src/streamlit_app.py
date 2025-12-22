@@ -118,7 +118,21 @@ def main_app():
     st.subheader("At-Risk Active Users")
     risk_df = predict_churn_risk(model, features_df, active_only=True)
     st.write("Risk Distribution (Active Users):")
-    st.dataframe(risk_df['risk_level'].value_counts())
+    
+    # Convert value_counts to DataFrame for styling
+    risk_distribution = risk_df['risk_level'].value_counts().reset_index()
+    risk_distribution.columns = ['Risk Level', 'Count']
+
+    def highlight_risk_distribution(row):
+        if row['Risk Level'] == 'High':
+            return ['background-color: #FFDDDD'] * len(row)  # Soft red
+        elif row['Risk Level'] == 'Medium':
+            return ['background-color: #FFEEDD'] * len(row)  # Soft orange
+        else:  # Low
+            return ['background-color: #DDFFDD'] * len(row)  # Soft green
+
+    st.dataframe(risk_distribution.style.apply(highlight_risk_distribution, axis=1), hide_index=True)
+    
     st.write("Top 10 At-Risk Users:")
     # Define a mapping for more readable column names
     column_name_mapping = {
