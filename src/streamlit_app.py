@@ -81,7 +81,7 @@ def login_page():
 
 def main_app():
     st.title(_("gym_churn_predictor_dashboard"))
-    st.markdown(f"<p style='text-align: center; color: #B3D4FF; font-size: 1.1em;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style=\'text-align: center; color: #B3D4FF; font-size: 1.1em; font-weight: bold;\'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
     st.write(f"{_('welcome', username=st.session_state['username'])}")
 
     # --- Load Data ---
@@ -154,16 +154,17 @@ def main_app():
 
     st.subheader(_("at_risk_active_users"))
     risk_df = predict_churn_risk(model, features_df, active_only=True)
+
     st.write(_("risk_distribution_active_users"))
-    
+
     # Convert value_counts to DataFrame for styling
     risk_distribution = risk_df['risk_level'].value_counts().reset_index()
-    risk_distribution.columns = [risk_level_col_name, 'Count']
+    risk_distribution.columns = ['Risk Level', 'Count']
 
     def highlight_risk_distribution(row):
-        if row[risk_level_col_name] == _('risk_level_high'):
+        if row['Risk Level'] == _('risk_level_high'):
             return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row[risk_level_col_name] == _('risk_level_medium'):
+        elif row['Risk Level'] == _('risk_level_medium'):
             return ['background-color: #FFEEDD'] * len(row)  # Soft orange
         else:  # Low
             return ['background-color: #DDFFDD'] * len(row)  # Soft green
@@ -173,28 +174,28 @@ def main_app():
     st.write(_("top_10_at_risk_users"))
     # Define a mapping for more readable column names
     column_name_mapping = {
-        'CUSTOMER_ID': _('customer_id'),
-        'AGE': _('age'),
-        'GENDER': _('gender'),
-        'MEMBERSHIP_TYPE': _('membership_type'),
-        'MONTHLY_PRICE': _('monthly_price'),
-        'CONTRACT_LENGTH': _('contract_length'),
-        'REGISTRATION_DATE': _('registration_date'),
-        'CHURNED': _('churned'),
-        'visits_per_month': _('visits_per_month'),
-        'days_since_last_visit': _('days_since_last_visit'),
-        'avg_session_duration_min': _('avg_session_duration_min'),
-        'visit_frequency_trend': _('visit_frequency_trend'),
-        'num_classes_enrolled': _('num_classes_enrolled'),
-        'churn_risk_score': _('churn_risk_score'),
-        'risk_level': _('risk_level')
+        'CUSTOMER_ID': 'Customer ID',
+        'AGE': 'Age',
+        'GENDER': 'Gender',
+        'MEMBERSHIP_TYPE': 'Membership Type',
+        'MONTHLY_PRICE': 'Monthly Price',
+        'CONTRACT_LENGTH': 'Contract Length',
+        'REGISTRATION_DATE': 'Registration Date',
+        'CHURNED': 'Churned',
+        'visits_per_month': 'Visits per Month',
+        'days_since_last_visit': 'Days Since Last Visit',
+        'avg_session_duration_min': 'Avg Session Duration (min)',
+        'visit_frequency_trend': 'Visit Frequency Trend',
+        'num_classes_enrolled': 'Num Classes Enrolled',
+        'churn_risk_score': 'Churn Risk Score',
+        'risk_level': 'Risk Level' 
     }
     
     # Rename columns and display with no index
     def highlight_risk(row):
-        if row[risk_level_col_name] == _('risk_level_high'):
+        if row['Risk Level'] == 'High':
             return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row[risk_level_col_name] == _('risk_level_medium'):
+        elif row['Risk Level'] == 'Medium':
             return ['background-color: #FFEEDD'] * len(row)  # Soft orange
         else:
             return [''] * len(row)
@@ -217,7 +218,6 @@ if selected_lang_code != st.session_state["lang"]:
     st.rerun()
 
 _ = lambda key, **kwargs: get_translation(st.session_state["lang"], key, **kwargs)
-risk_level_col_name = _('risk_level')
 
 if not st.session_state["logged_in"]:
     login_page()
