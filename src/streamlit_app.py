@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import hashlib
 import joblib
+import json
 import plotly.express as px
 
 # Add project root to path for imports
@@ -14,9 +15,31 @@ from src.churn_model import train_churn_model, evaluate_model, get_feature_impor
 from app.lang import get_translation, LANGUAGES
 
 # --- User Management (for demo purposes) ---
-USERS = {
-    "admin": hashlib.sha256("admin123".encode()).hexdigest()
-}
+USERS_FILE = Path("users.json")
+
+def load_users():
+    """Load users from JSON file"""
+    if USERS_FILE.exists():
+        try:
+            with open(USERS_FILE, 'r') as f:
+                return json.load(f)
+        except:
+            pass
+    # Default users if file doesn't exist or is corrupted
+    return {
+        "admin": hashlib.sha256("admin123".encode()).hexdigest()
+    }
+
+def save_users(users):
+    """Save users to JSON file"""
+    try:
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+    except Exception as e:
+        st.error(f"Error saving users: {e}")
+
+# Initialize users
+USERS = load_users()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -74,6 +97,7 @@ def login_page():
                         st.error(_("username_already_exists"))
                     else:
                         USERS[new_username] = hash_password(new_password)
+                        save_users(USERS)  # Save to file
                         st.success(_("account_created_successfully"))
                         st.balloons()
         
@@ -112,7 +136,12 @@ def main_app():
             color = "red"
         elif churn_rate >= 5:
             color = "orange"
-        st.markdown(f"<p style='text-align: center; color: black; font-size: 1em; margin-bottom: 0px;'>{_('churn_rate')}</p><h2 style='text-align: center; color: {color}; font-size: 2em; margin-top: 0px;'>{churn_rate:.2f}%</h2>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='text-align: center; padding: 0.25rem 0 1rem 0;'>
+            <div style='font-size: 0.875rem; color: rgb(107, 114, 128); margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
+            <div style='font-size: 2.25rem; font-weight: 600; color: {color}; line-height: 1;'>{churn_rate:.2f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.subheader(_("features_used_to_predict_churn"))
     features_df = engineer_features(users_df, visits_df)
