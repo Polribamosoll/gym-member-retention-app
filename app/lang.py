@@ -43,6 +43,7 @@ TRANSLATIONS = {
         "risk_level_high": "High",
         "risk_level_medium": "Medium",
         "risk_level_low": "Low",
+        "password_requirements": "Password must be at least 9 characters long and contain at least one capital letter, one number, and one letter",
     },
     "es": {
         "gym_churn_predictor": "PREDICTOR DE BAJA DE GIMNASIO",
@@ -82,6 +83,7 @@ TRANSLATIONS = {
         "risk_level_high": "Alto",
         "risk_level_medium": "Medio",
         "risk_level_low": "Bajo",
+        "password_requirements": "La contraseña debe tener al menos 9 caracteres y contener al menos una letra mayúscula, un número y una letra",
     },
     "ca": {
         "gym_churn_predictor": "PREDICTOR DE BAIMES DE GIMNÀS",
@@ -121,6 +123,7 @@ TRANSLATIONS = {
         "risk_level_high": "Alt",
         "risk_level_medium": "Mitjà",
         "risk_level_low": "Baix",
+        "password_requirements": "La contrasenya ha de tenir almenys 9 caràcters i contenir almenys una lletra majúscula, un número i una lletra",
     },
 }
 

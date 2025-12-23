@@ -44,6 +44,17 @@ USERS = load_users()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+def validate_password(password, translate_func):
+    """Validate password requirements:
+    - At least 9 characters long
+    - Contains at least one number
+    - Contains at least one letter
+    - Contains at least one capital letter
+    """
+    if len(password) < 9 or not any(char.isdigit() for char in password) or not any(char.isalpha() for char in password) or not any(char.isupper() for char in password):
+        return translate_func("password_requirements")
+    return None
+
 def login_page():
     st.markdown("""
     <style>
@@ -91,7 +102,11 @@ def login_page():
                 confirm_password = st.text_input(f"**{_('confirm_password')}**", type="password")
                 
                 if st.button(_("register"), use_container_width=True):
-                    if new_password != confirm_password:
+                    # Validate password requirements
+                    password_error = validate_password(new_password, _)
+                    if password_error:
+                        st.error(password_error)
+                    elif new_password != confirm_password:
                         st.error(_("passwords_do_not_match"))
                     elif new_username in USERS:
                         st.error(_("username_already_exists"))
