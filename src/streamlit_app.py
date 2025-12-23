@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from auxiliar.auxiliar import engineer_features
 from src.churn_model import train_churn_model, evaluate_model, get_feature_importance, predict_churn_risk, save_model, load_model, FEATURE_COLUMNS
+from app.lang import get_translation, LANGUAGES
 
 # --- User Management (for demo purposes) ---
 USERS = {
@@ -36,58 +37,59 @@ def login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown("<h1 style='text-align: center; color: #6495ED; font-size: 3.5em;'>GYM CHURN PREDICTOR</h1>", unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align: center; color: #4b5563; font-size: 2em;'>Login or Register</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; color: #6495ED; font-size: 3.5em;'>{_('gym_churn_predictor')}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; color: #4b5563; font-size: 2em;'>{_('login_register')}</h2>", unsafe_allow_html=True)
 
         login_register_container = st.container()
         with login_register_container:
-            choice = st.radio("Choose an option", ["Login", "Register"], horizontal=True, label_visibility="collapsed")
-
-            if choice == "Login":
+            choice = st.radio(_("login_register"), [_("login"), _("register")], horizontal=True, label_visibility="collapsed")
+            
+            if choice == _("login"):
                 st.markdown("---")
-                username = st.text_input("**Username**")
-                password = st.text_input("**Password**", type="password")
+                username = st.text_input(f"**{_('username')}**")
+                password = st.text_input(f"**{_('password')}**", type="password")
                 
-                if st.button("Login", use_container_width=True):
+                if st.button(_("login"), use_container_width=True):
                     hashed_password = hash_password(password)
                     if username in USERS and USERS[username] == hashed_password:
                         st.session_state["logged_in"] = True
                         st.session_state["username"] = username
-                        st.success(f"Welcome {username}!")
+                        st.success(f"{_('welcome', username=username)}")
                         st.rerun()
                     else:
-                        st.error("Invalid Username or Password")
+                        st.error(_("invalid_username_or_password"))
             
-            elif choice == "Register":
+            elif choice == _("register"):
                 st.markdown("---")
-                st.subheader("Create a New Account")
-                new_username = st.text_input("**New Username**")
-                new_password = st.text_input("**New Password**", type="password")
-                confirm_password = st.text_input("**Confirm Password**", type="password")
+                st.subheader(_("create_a_new_account"))
+                new_username = st.text_input(f"**{_('new_username')}**")
+                new_password = st.text_input(f"**{_('new_password')}**", type="password")
+                confirm_password = st.text_input(f"**{_('confirm_password')}**", type="password")
                 
-                if st.button("Register", use_container_width=True):
+                if st.button(_("register"), use_container_width=True):
                     if new_password != confirm_password:
-                        st.error("Passwords do not match.")
+                        st.error(_("passwords_do_not_match"))
                     elif new_username in USERS:
-                        st.error("Username already exists. Please choose a different one.")
+                        st.error(_("username_already_exists"))
                     else:
                         USERS[new_username] = hash_password(new_password)
-                        st.success("Account created successfully! Please login.")
+                        st.success(_("account_created_successfully"))
                         st.balloons()
         
         # Adding some spacing at the bottom
         st.markdown("<br><br>", unsafe_allow_html=True)
 
 def main_app():
-    st.title("Gym Churn Predictor Dashboard")
-    st.write(f"Welcome, {st.session_state['username']}!")
+    st.title(_("gym_churn_predictor_dashboard"))
+    st.markdown(f"<p style='text-align: center; color: #B3D4FF; font-size: 1.1em;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
+    st.write(f"{_('welcome', username=st.session_state['username'])}")
 
     # --- Load Data ---
     data_dir = Path.cwd() / 'data'
     users_df = pd.read_csv(data_dir / 'user_information.csv', parse_dates=['REGISTRATION_DATE', 'MEMBERSHIP_END_DATE'])
     visits_df = pd.read_csv(data_dir / 'user_visits.csv', parse_dates=['ENTRY_TIME', 'EXIT_TIME'])
 
-    st.subheader("Data Overview")
+    st.subheader(_("data_overview"))
     total_users = len(users_df)
     total_visits = len(visits_df)
     churned_users = users_df['MEMBERSHIP_END_DATE'].notna().sum()
@@ -96,44 +98,44 @@ def main_app():
 
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
-        st.metric(label="Total Users", value=total_users)
+        st.metric(label=_("total_users"), value=total_users)
     with col2:
-        st.metric(label="Total Visits", value=total_visits)
+        st.metric(label=_("total_visits"), value=total_visits)
     with col3:
-        st.metric(label="Active Users", value=active_users)
+        st.metric(label=_("active_users"), value=active_users)
     with col4:
-        st.metric(label="Churned Users", value=churned_users)
+        st.metric(label=_("churned_users"), value=churned_users)
     with col5:
         color = "green"
         if churn_rate >= 10:
             color = "red"
         elif churn_rate >= 5:
             color = "orange"
-        st.markdown(f"<p style='text-align: center; color: black; font-size: 1em; margin-bottom: 0px;'>Churn Rate</p><h2 style='text-align: center; color: {color}; font-size: 2em; margin-top: 0px;'>{churn_rate:.2f}%</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: black; font-size: 1em; margin-bottom: 0px;'>{_('churn_rate')}</p><h2 style='text-align: center; color: {color}; font-size: 2em; margin-top: 0px;'>{churn_rate:.2f}%</h2>", unsafe_allow_html=True)
 
-    st.subheader("Features used to Predict Churn")
+    st.subheader(_("features_used_to_predict_churn"))
     features_df = engineer_features(users_df, visits_df)
-    st.write(f"Features created: {features_df.shape}")
+    st.write(f"{_('features_created', shape=features_df.shape)}")
     st.dataframe(features_df.head())
 
     # --- Load or Train Model ---
     model_path = Path.cwd().parent / 'output' / 'churn_model.joblib'
     if model_path.exists():
         model = load_model(str(model_path))
-        st.success("Trained model loaded successfully!")
+        st.success(_("trained_model_loaded_successfully"))
     else:
-        st.warning("No trained model found. Training a new model now...")
+        st.warning(_("no_trained_model_found"))
         model, X_test, y_test = train_churn_model(features_df)
         model_path.parent.mkdir(parents=True, exist_ok=True)
         save_model(model, str(model_path))
-        st.success("New model trained and saved!")
+        st.success(_("new_model_trained_and_saved"))
 
 
-    st.subheader("Feature Importance")
+    st.subheader(_("feature_importance"))
     importance_df = get_feature_importance(model)
     st.dataframe(importance_df.head()) # Show top features
 
-    st.subheader("Churned vs Active Users Comparison")
+    st.subheader(_("churned_vs_active_users_comparison"))
     comparison_cols = ['visits_per_month', 'days_since_last_visit', 'avg_session_duration_min', 
                        'visit_frequency_trend', 'num_classes_enrolled']
     churned = features_df[features_df['CHURNED'] == 1]
@@ -150,49 +152,49 @@ def main_app():
         })
     st.dataframe(pd.DataFrame(comparison_data).set_index('Feature'))
 
-    st.subheader("At-Risk Active Users")
+    st.subheader(_("at_risk_active_users"))
     risk_df = predict_churn_risk(model, features_df, active_only=True)
-    st.write("Risk Distribution (Active Users):")
+    st.write(_("risk_distribution_active_users"))
     
     # Convert value_counts to DataFrame for styling
     risk_distribution = risk_df['risk_level'].value_counts().reset_index()
-    risk_distribution.columns = ['Risk Level', 'Count']
+    risk_distribution.columns = [risk_level_col_name, 'Count']
 
     def highlight_risk_distribution(row):
-        if row['Risk Level'] == 'High':
+        if row[risk_level_col_name] == _('risk_level_high'):
             return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row['Risk Level'] == 'Medium':
+        elif row[risk_level_col_name] == _('risk_level_medium'):
             return ['background-color: #FFEEDD'] * len(row)  # Soft orange
         else:  # Low
             return ['background-color: #DDFFDD'] * len(row)  # Soft green
 
     st.dataframe(risk_distribution.style.apply(highlight_risk_distribution, axis=1), hide_index=True)
     
-    st.write("Top 10 At-Risk Users:")
+    st.write(_("top_10_at_risk_users"))
     # Define a mapping for more readable column names
     column_name_mapping = {
-        'CUSTOMER_ID': 'Customer ID',
-        'AGE': 'Age',
-        'GENDER': 'Gender',
-        'MEMBERSHIP_TYPE': 'Membership Type',
-        'MONTHLY_PRICE': 'Monthly Price',
-        'CONTRACT_LENGTH': 'Contract Length',
-        'REGISTRATION_DATE': 'Registration Date',
-        'CHURNED': 'Churned',
-        'visits_per_month': 'Visits per Month',
-        'days_since_last_visit': 'Days Since Last Visit',
-        'avg_session_duration_min': 'Avg Session Duration (min)',
-        'visit_frequency_trend': 'Visit Frequency Trend',
-        'num_classes_enrolled': 'Num Classes Enrolled',
-        'churn_risk_score': 'Churn Risk Score',
-        'risk_level': 'Risk Level'
+        'CUSTOMER_ID': _('customer_id'),
+        'AGE': _('age'),
+        'GENDER': _('gender'),
+        'MEMBERSHIP_TYPE': _('membership_type'),
+        'MONTHLY_PRICE': _('monthly_price'),
+        'CONTRACT_LENGTH': _('contract_length'),
+        'REGISTRATION_DATE': _('registration_date'),
+        'CHURNED': _('churned'),
+        'visits_per_month': _('visits_per_month'),
+        'days_since_last_visit': _('days_since_last_visit'),
+        'avg_session_duration_min': _('avg_session_duration_min'),
+        'visit_frequency_trend': _('visit_frequency_trend'),
+        'num_classes_enrolled': _('num_classes_enrolled'),
+        'churn_risk_score': _('churn_risk_score'),
+        'risk_level': _('risk_level')
     }
     
     # Rename columns and display with no index
     def highlight_risk(row):
-        if row['Risk Level'] == 'High':
+        if row[risk_level_col_name] == _('risk_level_high'):
             return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row['Risk Level'] == 'Medium':
+        elif row[risk_level_col_name] == _('risk_level_medium'):
             return ['background-color: #FFEEDD'] * len(row)  # Soft orange
         else:
             return [''] * len(row)
@@ -202,9 +204,22 @@ def main_app():
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "en" # Default language
+
+# Language selector
+selected_lang_name = st.sidebar.selectbox("Language", options=list(LANGUAGES.values()), index=list(LANGUAGES.keys()).index(st.session_state["lang"]))
+
+# Update session state if language changes
+selected_lang_code = [code for code, name in LANGUAGES.items() if name == selected_lang_name][0]
+if selected_lang_code != st.session_state["lang"]:
+    st.session_state["lang"] = selected_lang_code
+    st.rerun()
+
+_ = lambda key, **kwargs: get_translation(st.session_state["lang"], key, **kwargs)
+risk_level_col_name = _('risk_level')
+
 if not st.session_state["logged_in"]:
     login_page()
 else:
     main_app()
-
-
