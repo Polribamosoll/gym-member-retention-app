@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import hashlib
 import joblib
+import plotly.express as px
 
 # Add project root to path for imports
 import sys
@@ -162,14 +163,42 @@ def main_app():
     risk_distribution.columns = ['Risk Level', 'Count']
 
     def highlight_risk_distribution(row):
-        if row['Risk Level'] == _('risk_level_high'):
+        if row['Risk Level'] == 'High':
             return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row['Risk Level'] == _('risk_level_medium'):
+        elif row['Risk Level'] == 'Medium':
             return ['background-color: #FFEEDD'] * len(row)  # Soft orange
         else:  # Low
             return ['background-color: #DDFFDD'] * len(row)  # Soft green
 
-    st.dataframe(risk_distribution.style.apply(highlight_risk_distribution, axis=1), hide_index=True)
+    # Create more vibrant color mapping for bar chart
+    color_map = {
+        'High': '#FF4444',  # Vibrant red
+        'Medium': '#FF8800',  # Vibrant orange
+        'Low': '#44AA44'  # Vibrant green
+    }
+
+    # Create bar chart
+    fig = px.bar(
+        risk_distribution,
+        x='Risk Level',
+        y='Count',
+        color='Risk Level',
+        color_discrete_map=color_map,
+        title='Risk Distribution (Active Users)',
+        text='Count'  # Add count labels above bars
+    )
+
+    # Center the bars and update layout
+    fig.update_layout(
+        showlegend=False,
+        xaxis={'categoryorder': 'array', 'categoryarray': ['High', 'Medium', 'Low']},
+        bargap=0.3  # Add gap between bars for better centering
+    )
+
+    # Update text position to above the bars
+    fig.update_traces(textposition='outside')
+
+    st.plotly_chart(fig)
     
     st.write(_("top_10_at_risk_users"))
     # Define a mapping for more readable column names
