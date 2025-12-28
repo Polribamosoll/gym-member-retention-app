@@ -245,6 +245,11 @@ def main_app():
     st.plotly_chart(fig)
     
     st.write(_("top_10_at_risk_users"))
+
+    # Initialize session state for user_offset if not already set
+    if 'user_offset' not in st.session_state:
+        st.session_state.user_offset = 0
+
     # Define a mapping for more readable column names
     column_name_mapping = {
         'CUSTOMER_ID': 'Customer ID',
@@ -264,6 +269,9 @@ def main_app():
         'risk_level': 'Risk Level' 
     }
     
+    # Get the current slice of users
+    current_users_df = risk_df.iloc[st.session_state.user_offset : st.session_state.user_offset + 10]
+
     # Rename columns and display with no index
     def highlight_risk(row):
         if row['Risk Level'] == 'High':
@@ -273,7 +281,22 @@ def main_app():
         else:
             return [''] * len(row)
 
-    st.dataframe(risk_df.head(10).rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
+    st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
+
+    # Buttons for pagination
+    col_buttons1, col_buttons2 = st.columns([1, 1])
+
+    with col_buttons1:
+        if st.session_state.user_offset > 0:
+            if st.button(_("back_to_first_10")):
+                st.session_state.user_offset = 0
+                st.rerun()
+
+    with col_buttons2:
+        if st.session_state.user_offset + 10 < len(risk_df):
+            if st.button(_("load_next_10_at_risk_users")):
+                st.session_state.user_offset += 10
+                st.rerun()
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
