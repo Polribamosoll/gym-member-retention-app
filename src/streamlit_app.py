@@ -144,6 +144,9 @@ def main_app():
         save_model(model, str(model_path))
         st.success(_("new_model_trained_and_saved"))
 
+    # Predict Churn Risk (moved up to be available for Data Overview and other sections)
+    risk_df = predict_churn_risk(model, features_df, active_only=True)
+
     # 1. Data Overview
     st.subheader(_("data_overview"))
     total_users = len(users_df)
@@ -152,27 +155,59 @@ def main_app():
     active_users = users_df['MEMBERSHIP_END_DATE'].isna().sum()
     churn_rate = (churned_users / total_users) * 100 if total_users > 0 else 0
 
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
-        st.metric(label=_("total_users"), value=total_users)
+        st.markdown(f"""
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('total_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{total_users}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.metric(label=_("total_visits"), value=total_visits)
+        st.markdown(f"""
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('total_visits')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{total_visits}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col3:
-        st.metric(label=_("active_users"), value=active_users)
+        st.markdown(f"""
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('active_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{active_users}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col4:
-        st.metric(label=_("churned_users"), value=churned_users)
+        st.markdown(f"""
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('churned_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{churned_users}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col5:
+        # Calculate users at high or medium risk
+        users_at_risk_count = risk_df[(risk_df['risk_level'] == 'High') | (risk_df['risk_level'] == 'Medium')].shape[0]
+        st.markdown(f"""
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: red; line-height: 1;'>{users_at_risk_count}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col6:
         color = "green"
         if churn_rate >= 10:
             color = "red"
         elif churn_rate >= 5:
             color = "orange"
         st.markdown(f"""
-        <div style='text-align: center; padding: 0.25rem 0 1rem 0;'>
-            <div style='font-size: 0.875rem; color: rgb(107, 114, 128); margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
-            <div style='font-size: 2.25rem; font-weight: 600; color: {color}; line-height: 1;'>{churn_rate:.2f}%</div>
+        <div>
+            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: {color}; line-height: 1;'>{churn_rate:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
+
+    st.write("") # Add an empty line for separation
+    st.write("") # Add another empty line for separation
 
     # 2. At-Risk Active Users (Donut Plot)
     st.subheader(_("at_risk_active_users"))
