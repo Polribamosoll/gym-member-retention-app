@@ -56,15 +56,53 @@ def validate_password(password, translate_func):
     return None
 
 def login_page():
+    # Set black background for the entire app, soft green titles, and white text
     st.markdown("""
     <style>
+    .stApp {
+        background-color: #000000;
+    }
+    .stTitle, .stHeader, .stSubheader {
+        color: #4ade80 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #4ade80 !important;
+    }
+    .stMarkdown, .stText, p, div {
+        color: #ffffff !important;
+    }
+    .stSuccess, .stWarning, .stError, .stInfo {
+        color: #ffffff !important;
+    }
+    .stSuccess > div, .stWarning > div, .stError > div, .stInfo > div {
+        color: #ffffff !important;
+    }
     div.stButton > button:first-child {
-        background-color: #B3D4FF;
-        color: black;
+        background-color: transparent;
+        color: #4ade80;
+        border: 2px solid #4ade80;
+        border-radius: 5px;
     }
     div.stButton > button:hover {
-        background-color: #84B0F5;
-        color: black;
+        background-color: #4ade80;
+        color: #000000;
+        border: 2px solid #4ade80;
+        border-radius: 5px;
+    }
+    .stRadio label, .stTextInput label, .stTextArea label {
+        color: #ffffff !important;
+    }
+    .css-1lcbmhc .stSelectbox label {
+        color: #4ade80 !important;
+        font-weight: 600 !important;
+    }
+    .css-1lcbmhc .stSelectbox div[data-baseweb="select"] {
+        background-color: #000000 !important;
+        border: 1px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+    .css-1lcbmhc .stSelectbox div[data-baseweb="select"] * {
+        color: #ffffff !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -72,8 +110,8 @@ def login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown(f"<h1 style='text-align: center; color: #6495ED; font-size: 3.5em;'>{_('gym_churn_predictor')}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<h2 style='text-align: center; color: #4b5563; font-size: 2em;'>{_('login_register')}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; color: #4ade80; font-size: 3.5em;'>{_('gym_churn_predictor')}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; color: #4ade80; font-size: 2em;'>{_('login_register')}</h2>", unsafe_allow_html=True)
 
         login_register_container = st.container()
         with login_register_container:
@@ -120,8 +158,56 @@ def login_page():
         st.markdown("<br><br>", unsafe_allow_html=True)
 
 def main_app():
+    # Set black background for the entire app, soft green titles, and white text
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #000000;
+    }
+    .stTitle, .stHeader, .stSubheader {
+        color: #4ade80 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #4ade80 !important;
+    }
+    .stMarkdown, .stText, p, div {
+        color: #ffffff !important;
+    }
+    .stSuccess, .stWarning, .stError, .stInfo {
+        color: #ffffff !important;
+    }
+    .stSuccess > div, .stWarning > div, .stError > div, .stInfo > div {
+        color: #ffffff !important;
+    }
+    .stButton > button {
+        background-color: transparent !important;
+        color: #4ade80 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+    .stButton > button:hover {
+        background-color: #4ade80 !important;
+        color: #000000 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+    .css-1lcbmhc .stSelectbox label {
+        color: #4ade80 !important;
+        font-weight: 600 !important;
+    }
+    .css-1lcbmhc .stSelectbox div[data-baseweb="select"] {
+        background-color: #000000 !important;
+        border: 1px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+    .css-1lcbmhc .stSelectbox div[data-baseweb="select"] * {
+        color: #ffffff !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title(_("gym_churn_predictor_dashboard"))
-    st.markdown(f"<p style='text-align: center; color: #B3D4FF; font-size: 1.1em; font-weight: bold;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #4ade80; font-size: 1.1em; font-weight: bold;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
     st.write(f"{_('welcome', username=st.session_state['username'])}")
 
     # --- Load Data ---
@@ -159,29 +245,29 @@ def main_app():
     with col1:
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('total_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{total_users}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_users}</div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('total_visits')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{total_visits}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_visits')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_visits}</div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('active_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{active_users}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('active_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{active_users}</div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('churned_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #1a1a1a; line-height: 1;'>{churned_users}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churned_users')}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{churned_users}</div>
         </div>
         """, unsafe_allow_html=True)
     with col5:
@@ -189,7 +275,7 @@ def main_app():
         users_at_risk_count = risk_df[(risk_df['risk_level'] == 'High') | (risk_df['risk_level'] == 'Medium')].shape[0]
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
             <div style='font-size: 1.8rem; font-weight: 600; color: red; line-height: 1;'>{users_at_risk_count}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -201,7 +287,7 @@ def main_app():
             color = "orange"
         st.markdown(f"""
         <div>
-            <div style='font-size: 0.875rem; color: #1a1a1a; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
+            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
             <div style='font-size: 1.8rem; font-weight: 600; color: {color}; line-height: 1;'>{churn_rate:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
@@ -319,7 +405,24 @@ def main_app():
     # 4. Feature Importance
     st.subheader(_("feature_importance"))
     importance_df = get_feature_importance(model)
-    st.dataframe(importance_df.head()) # Show top features
+    # Soft gray background table with inline styles
+    st.markdown("""
+    <style>
+    /* Force gray background on specific table */
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame {
+        background-color: #f5f5f5 !important;
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame thead th {
+        background-color: #e0e0e0 !important;
+        color: #333333 !important;
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame tbody td {
+        background-color: #f5f5f5 !important;
+        color: #333333 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    st.dataframe(importance_df.head())
 
     # 5. Churned vs Active Users Comparison (Keeping this as it was previously there, but can be removed if not desired)
     st.subheader(_("churned_vs_active_users_comparison"))
@@ -337,6 +440,23 @@ def main_app():
             'Active (Mean)': active[col].mean(),
             'Active (Median)': active[col].median(),
         })
+    # Soft gray background table with inline styles
+    st.markdown("""
+    <style>
+    /* Force gray background on specific table */
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame {
+        background-color: #f5f5f5 !important;
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame thead th {
+        background-color: #e0e0e0 !important;
+        color: #333333 !important;
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame tbody td {
+        background-color: #f5f5f5 !important;
+        color: #333333 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     st.dataframe(pd.DataFrame(comparison_data).set_index('Feature'))
 
 if "logged_in" not in st.session_state:
@@ -345,8 +465,124 @@ if "logged_in" not in st.session_state:
 if "lang" not in st.session_state:
     st.session_state["lang"] = "en" # Default language
 
-# Language selector
-selected_lang_name = st.sidebar.selectbox("Language", options=list(LANGUAGES.values()), index=list(LANGUAGES.keys()).index(st.session_state["lang"]))
+# Language selector with custom styling
+with st.sidebar:
+
+    st.markdown("""
+    <style>
+    /* AGGRESSIVE: Force ALL sidebar content to be green and bold */
+    [data-testid="stSidebar"] {
+        background-color: #1a1a1a !important;
+        border-right: 3px solid #4ade80 !important;
+    }
+
+    /* Force everything in sidebar to be green and bold */
+    [data-testid="stSidebar"] * {
+        color: #4ade80 !important;
+        font-weight: bold !important;
+    }
+
+    /* Button styling */
+    [data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
+        background-color: transparent !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+
+    /* Dropdown styling */
+    div[data-baseweb="popover"] {
+        background-color: #1a1a1a !important;
+        border: 1px solid #4ade80 !important;
+        border-radius: 5px !important;
+    }
+
+    /* Force ALL dropdown content to be green and bold */
+    div[data-baseweb="popover"] *,
+    li[role="option"] *,
+    div[role="option"] * {
+        color: #4ade80 !important;
+        background-color: #1a1a1a !important;
+        font-weight: bold !important;
+    }
+
+    /* Hover states */
+    li[role="option"]:hover,
+    div[role="option"]:hover,
+    li[role="option"]:hover *,
+    div[role="option"]:hover * {
+        background-color: #4ade80 !important;
+        color: #000000 !important;
+    }
+
+    /* Cool Table Styling */
+    .stDataFrame {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%) !important;
+        border-radius: 10px !important;
+        border: 2px solid #4ade80 !important;
+        box-shadow: 0 8px 32px rgba(74, 222, 128, 0.1) !important;
+        overflow: hidden !important;
+    }
+
+    .stDataFrame > div {
+        background: transparent !important;
+    }
+
+    /* Table headers */
+    .stDataFrame thead th {
+        background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%) !important;
+        color: #000000 !important;
+        font-weight: bold !important;
+        border: none !important;
+        padding: 12px !important;
+        text-align: center !important;
+    }
+
+    /* Table cells */
+    .stDataFrame tbody td {
+        color: #ffffff !important;
+        border-bottom: 1px solid #4ade80 !important;
+        padding: 10px !important;
+        text-align: center !important;
+    }
+
+    /* Alternating row colors */
+    .stDataFrame tbody tr:nth-child(even) {
+        background-color: rgba(74, 222, 128, 0.05) !important;
+    }
+
+    .stDataFrame tbody tr:nth-child(odd) {
+        background-color: rgba(74, 222, 128, 0.02) !important;
+    }
+
+    /* Hover effect for rows */
+    .stDataFrame tbody tr:hover {
+        background-color: rgba(74, 222, 128, 0.1) !important;
+        transform: scale(1.01) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    /* Special styling for highlighted risk rows */
+    .stDataFrame tbody tr[data-row-highlight="high"] {
+        background: linear-gradient(90deg, rgba(255, 100, 100, 0.1) 0%, rgba(255, 50, 50, 0.1) 100%) !important;
+        border-left: 4px solid #ff4444 !important;
+    }
+
+    .stDataFrame tbody tr[data-row-highlight="medium"] {
+        background: linear-gradient(90deg, rgba(255, 150, 50, 0.1) 0%, rgba(255, 100, 50, 0.1) 100%) !important;
+        border-left: 4px solid #ff8800 !important;
+    }
+
+    /* Debug: Add visible markers */
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame {
+        border: 3px solid #ff0000 !important; /* Red border for debugging */
+    }
+    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame {
+        border: 3px solid #00ff00 !important; /* Green border for debugging */
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
+    selected_lang_name = st.selectbox("Language", options=list(LANGUAGES.values()), index=list(LANGUAGES.keys()).index(st.session_state["lang"]))
 
 # Update session state if language changes
 selected_lang_code = [code for code, name in LANGUAGES.items() if name == selected_lang_name][0]
