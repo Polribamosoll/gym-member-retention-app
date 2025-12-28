@@ -222,25 +222,25 @@ def main_app():
     }
 
     # Create bar chart
-    fig = px.bar(
+    fig = px.pie(
         risk_distribution,
-        x='Risk Level',
-        y='Count',
+        names='Risk Level',
+        values='Count',
         color='Risk Level',
         color_discrete_map=color_map,
-        title='Risk Distribution (Active Users)',
-        text='Count'  # Add count labels above bars
+        title=None, # Remove title as it's already in the app
+        hole=0.5  # Create the donut shape
     )
 
-    # Center the bars and update layout
+    # Update layout for donut chart
     fig.update_layout(
-        showlegend=False,
-        xaxis={'categoryorder': 'array', 'categoryarray': ['High', 'Medium', 'Low']},
-        bargap=0.3  # Add gap between bars for better centering
+        showlegend=True,  # Show legend for pie chart
+        uniformtext_minsize=12, 
+        uniformtext_mode='hide'
     )
 
-    # Update text position to above the bars
-    fig.update_traces(textposition='outside')
+    # Update text and hover info for pie chart
+    fig.update_traces(textposition='inside', textinfo='percent+label', hoverinfo='label+percent+value')
 
     st.plotly_chart(fig)
     
