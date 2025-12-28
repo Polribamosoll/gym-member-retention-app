@@ -121,7 +121,7 @@ def login_page():
 
 def main_app():
     st.title(_("gym_churn_predictor_dashboard"))
-    st.markdown(f"<p style=\'text-align: center; color: #B3D4FF; font-size: 1.1em; font-weight: bold;\'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #B3D4FF; font-size: 1.1em; font-weight: bold;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
     st.write(f"{_('welcome', username=st.session_state['username'])}")
 
     # --- Load Data ---
@@ -129,6 +129,22 @@ def main_app():
     users_df = pd.read_csv(data_dir / 'user_information.csv', parse_dates=['REGISTRATION_DATE', 'MEMBERSHIP_END_DATE'])
     visits_df = pd.read_csv(data_dir / 'user_visits.csv', parse_dates=['ENTRY_TIME', 'EXIT_TIME'])
 
+    # --- Feature Engineering ---
+    features_df = engineer_features(users_df, visits_df)
+
+    # --- Load or Train Model ---
+    model_path = Path.cwd().parent / 'output' / 'churn_model.joblib'
+    if model_path.exists():
+        model = load_model(str(model_path))
+        st.success(_("trained_model_loaded_successfully"))
+    else:
+        st.warning(_("no_trained_model_found"))
+        model, X_test, y_test = train_churn_model(features_df)
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        save_model(model, str(model_path))
+        st.success(_("new_model_trained_and_saved"))
+
+    # 1. Data Overview
     st.subheader(_("data_overview"))
     total_users = len(users_df)
     total_visits = len(visits_df)
@@ -158,49 +174,10 @@ def main_app():
         </div>
         """, unsafe_allow_html=True)
 
-    st.subheader(_("features_used_to_predict_churn"))
-    features_df = engineer_features(users_df, visits_df)
-    st.write(f"{_('features_created', shape=features_df.shape)}")
-    st.dataframe(features_df.head())
-
-    # --- Load or Train Model ---
-    model_path = Path.cwd().parent / 'output' / 'churn_model.joblib'
-    if model_path.exists():
-        model = load_model(str(model_path))
-        st.success(_("trained_model_loaded_successfully"))
-    else:
-        st.warning(_("no_trained_model_found"))
-        model, X_test, y_test = train_churn_model(features_df)
-        model_path.parent.mkdir(parents=True, exist_ok=True)
-        save_model(model, str(model_path))
-        st.success(_("new_model_trained_and_saved"))
-
-
-    st.subheader(_("feature_importance"))
-    importance_df = get_feature_importance(model)
-    st.dataframe(importance_df.head()) # Show top features
-
-    st.subheader(_("churned_vs_active_users_comparison"))
-    comparison_cols = ['visits_per_month', 'days_since_last_visit', 'avg_session_duration_min', 
-                       'visit_frequency_trend', 'num_classes_enrolled']
-    churned = features_df[features_df['CHURNED'] == 1]
-    active = features_df[features_df['CHURNED'] == 0]
-
-    comparison_data = []
-    for col in comparison_cols:
-        comparison_data.append({
-            'Feature': col,
-            'Churned (Mean)': churned[col].mean(),
-            'Churned (Median)': churned[col].median(),
-            'Active (Mean)': active[col].mean(),
-            'Active (Median)': active[col].median(),
-        })
-    st.dataframe(pd.DataFrame(comparison_data).set_index('Feature'))
-
+    # 2. At-Risk Active Users (Donut Plot)
     st.subheader(_("at_risk_active_users"))
     risk_df = predict_churn_risk(model, features_df, active_only=True)
 
-    st.write(_("risk_distribution_active_users"))
 
     # Convert value_counts to DataFrame for styling
     risk_distribution = risk_df['risk_level'].value_counts().reset_index()
@@ -244,7 +221,13 @@ def main_app():
 
     st.plotly_chart(fig)
     
-    st.write(_("top_10_at_risk_users"))
+    # 3. Top 10 At-Risk Users (Table with buttons)
+    st.subheader(_("top_10_at_risk_users"))
+
+    # Calculate the number of high-risk users
+    num_high_risk_users = len(risk_df[risk_df['risk_level'] == 'High'])
+    st.write(_("high_risk_users_message", n=num_high_risk_users))
+
 
     # Initialize session state for user_offset if not already set
     if 'user_offset' not in st.session_state:
@@ -297,6 +280,29 @@ def main_app():
             if st.button(_("load_next_10_at_risk_users")):
                 st.session_state.user_offset += 10
                 st.rerun()
+
+    # 4. Feature Importance
+    st.subheader(_("feature_importance"))
+    importance_df = get_feature_importance(model)
+    st.dataframe(importance_df.head()) # Show top features
+
+    # 5. Churned vs Active Users Comparison (Keeping this as it was previously there, but can be removed if not desired)
+    st.subheader(_("churned_vs_active_users_comparison"))
+    comparison_cols = ['visits_per_month', 'days_since_last_visit', 'avg_session_duration_min', 
+                       'visit_frequency_trend', 'num_classes_enrolled']
+    churned = features_df[features_df['CHURNED'] == 1]
+    active = features_df[features_df['CHURNED'] == 0]
+
+    comparison_data = []
+    for col in comparison_cols:
+        comparison_data.append({
+            'Feature': col,
+            'Churned (Mean)': churned[col].mean(),
+            'Churned (Median)': churned[col].median(),
+            'Active (Mean)': active[col].mean(),
+            'Active (Median)': active[col].median(),
+        })
+    st.dataframe(pd.DataFrame(comparison_data).set_index('Feature'))
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
