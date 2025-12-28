@@ -59,14 +59,20 @@ def login_page():
     # Set black background for the entire app, soft green titles, and white text
     st.markdown("""
     <style>
+    .retention-subtitle {
+        color: #4ade80 !important;
+    }
     .stApp {
         background-color: #000000;
     }
     .stTitle, .stHeader, .stSubheader {
         color: #4ade80 !important;
     }
-    h1, h2, h3, h4, h5, h6 {
+    h1, h3, h4, h5, h6 {
         color: #4ade80 !important;
+    }
+    h2 {
+        color: #ffffff !important;
     }
     .stMarkdown, .stText, p, div {
         color: #ffffff !important;
@@ -91,6 +97,12 @@ def login_page():
     }
     .stRadio label, .stTextInput label, .stTextArea label {
         color: #ffffff !important;
+        font-size: 0.9em !important;
+    }
+    /* Target radio button options specifically */
+    .stRadio div[role="radiogroup"] label {
+        color: #ffffff !important;
+        font-size: 0.9em !important;
     }
     .css-1lcbmhc .stSelectbox label {
         color: #4ade80 !important;
@@ -110,8 +122,9 @@ def login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown(f"<h1 style='text-align: center; color: #4ade80; font-size: 3.5em;'>{_('gym_churn_predictor')}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<h2 style='text-align: center; color: #4ade80; font-size: 2em;'>{_('login_register')}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; color: #4ade80; font-size: 2.5em;'>Welcome to MemberPulse</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center; color: #4ade80; font-size: 1.5em; margin-top: 0.5em; font-weight: bold;' class='retention-subtitle'>Retention, powered by AI.</p>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='text-align: center; color: #ffffff; font-size: 2em;'>{_('login_register')}</h2>", unsafe_allow_html=True)
 
         login_register_container = st.container()
         with login_register_container:
@@ -173,6 +186,9 @@ def main_app():
     .stMarkdown, .stText, p, div {
         color: #ffffff !important;
     }
+    .metric-light-red {
+        color: #FF7F7F !important;
+    }
     .stSuccess, .stWarning, .stError, .stInfo {
         color: #ffffff !important;
     }
@@ -208,7 +224,6 @@ def main_app():
 
     st.title(_("gym_churn_predictor_dashboard"))
     st.markdown(f"<p style='text-align: center; color: #4ade80; font-size: 1.1em; font-weight: bold;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
-    st.write(f"{_('welcome', username=st.session_state['username'])}")
 
     # --- Load Data ---
     data_dir = Path.cwd() / 'data'
@@ -276,19 +291,14 @@ def main_app():
         st.markdown(f"""
         <div>
             <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: red; line-height: 1;'>{users_at_risk_count}</div>
+            <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{users_at_risk_count}</div>
         </div>
         """, unsafe_allow_html=True)
     with col6:
-        color = "green"
-        if churn_rate >= 10:
-            color = "red"
-        elif churn_rate >= 5:
-            color = "orange"
         st.markdown(f"""
         <div>
             <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: {color}; line-height: 1;'>{churn_rate:.2f}%</div>
+            <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{churn_rate:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -467,6 +477,8 @@ if "lang" not in st.session_state:
 
 # Language selector with custom styling
 with st.sidebar:
+    # Logo at the top of sidebar
+    st.image("assets/Logo.png", width=500, use_container_width=False)
 
     st.markdown("""
     <style>
