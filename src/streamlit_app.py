@@ -324,11 +324,11 @@ def main_app():
         else:  # Low
             return ['background-color: #DDFFDD'] * len(row)  # Soft green
 
-    # Create more vibrant color mapping for bar chart
+    # Create color mapping matching app theme
     color_map = {
-        'High': '#FF4444',  # Vibrant red
-        'Medium': '#FF8800',  # Vibrant orange
-        'Low': '#44AA44'  # Vibrant green
+        'High': '#FF7F7F',  # Light red (matching risk indicators)
+        'Medium': '#FFA500',  # Orange (warning)
+        'Low': '#4ade80'  # App green (healthy)
     }
 
     # Create bar chart
@@ -443,7 +443,7 @@ def main_app():
     # Create the feature importance plot
     fig, ax = plt.subplots(figsize=(12, 10))
     importance_sorted = importance_df.sort_values('importance', ascending=True)
-    bars = ax.barh(importance_sorted['feature_label'], importance_sorted['importance'], color='steelblue')
+    bars = ax.barh(importance_sorted['feature_label'], importance_sorted['importance'], color='#4ade80')
     ax.set_xlabel('Importance Score', fontsize=12)
     ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold')
 
@@ -493,7 +493,7 @@ def main_app():
 
     # Create bars
     churned_bars = ax.bar(x - width/2, comparison_df['Churned'], width,
-                          label='Churned Users', color='#FF6B6B', alpha=0.8)
+                          label='Churned Users', color='#FF7F7F', alpha=0.8)
     active_bars = ax.bar(x + width/2, comparison_df['Active'], width,
                          label='Active Users', color='#4ade80', alpha=0.8)
 
@@ -513,7 +513,7 @@ def main_app():
         for bar in bars:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2., height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
-                    f'{height:.1f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+                    f'{height:.1f}', ha='center', va='bottom', fontsize=11, fontweight='bold')
 
     add_value_labels(churned_bars)
     add_value_labels(active_bars)
