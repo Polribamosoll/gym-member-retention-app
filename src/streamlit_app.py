@@ -5,6 +5,7 @@ import hashlib
 import joblib
 import json
 import plotly.express as px
+import matplotlib.pyplot as plt
 
 # Add project root to path for imports
 import sys
@@ -415,24 +416,44 @@ def main_app():
     # 4. Feature Importance
     st.subheader(_("feature_importance"))
     importance_df = get_feature_importance(model)
-    # Soft gray background table with inline styles
-    st.markdown("""
-    <style>
-    /* Force gray background on specific table */
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame {
-        background-color: #f5f5f5 !important;
+
+    # Create readable labels for features
+    feature_labels = {
+        'total_visits': 'Total Visits',
+        'visits_per_month': 'Visits per Month',
+        'avg_session_duration_min': 'Average Session Duration (min)',
+        'days_since_last_visit': 'Days Since Last Visit',
+        'avg_days_between_visits': 'Average Days Between Visits',
+        'std_days_between_visits': 'Standard Deviation Days Between Visits',
+        'visits_last_30_days': 'Visits in Last 30 Days',
+        'visits_last_60_days': 'Visits in Last 60 Days',
+        'visits_last_90_days': 'Visits in Last 90 Days',
+        'pct_peak_hour_visits': 'Percentage Peak Hour Visits',
+        'pct_weekend_visits': 'Percentage Weekend Visits',
+        'visit_frequency_trend': 'Visit Frequency Trend',
+        'membership_duration_months': 'Membership Duration (months)',
+        'AGE': 'Age',
+        'GENDER': 'Gender'
     }
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame thead th {
-        background-color: #e0e0e0 !important;
-        color: #333333 !important;
-    }
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(2) .stDataFrame tbody td {
-        background-color: #f5f5f5 !important;
-        color: #333333 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    st.dataframe(importance_df.head())
+
+    # Apply readable labels
+    importance_df['feature_label'] = importance_df['feature'].map(feature_labels).fillna(importance_df['feature'])
+
+    # Create the feature importance plot
+    fig, ax = plt.subplots(figsize=(12, 10))
+    importance_sorted = importance_df.sort_values('importance', ascending=True)
+    bars = ax.barh(importance_sorted['feature_label'], importance_sorted['importance'], color='steelblue')
+    ax.set_xlabel('Importance Score', fontsize=12)
+    ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold')
+
+    # Add value labels on the bars
+    for bar in bars:
+        width = bar.get_width()
+        ax.text(width + 0.001, bar.get_y() + bar.get_height()/2,
+                f'{width:.3f}', ha='left', va='center', fontsize=10)
+
+    plt.tight_layout()
+    st.pyplot(fig)
 
     # 5. Churned vs Active Users Comparison (Keeping this as it was previously there, but can be removed if not desired)
     st.subheader(_("churned_vs_active_users_comparison"))
