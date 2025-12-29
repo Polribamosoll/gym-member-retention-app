@@ -522,7 +522,7 @@ def main_app():
     st.pyplot(fig)
 
     # Add summary statistics table below the chart
-    st.markdown("### Summary Statistics")
+    st.markdown(f"### {_('summary_statistics')}")
     summary_data = []
     for feature_key, feature_name in feature_comparisons.items():
         churned_mean = churned[feature_key].mean()
