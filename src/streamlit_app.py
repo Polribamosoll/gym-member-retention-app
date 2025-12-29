@@ -6,6 +6,7 @@ import joblib
 import json
 import plotly.express as px
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Add project root to path for imports
 import sys
@@ -455,40 +456,87 @@ def main_app():
     plt.tight_layout()
     st.pyplot(fig)
 
-    # 5. Churned vs Active Users Comparison (Keeping this as it was previously there, but can be removed if not desired)
+    # 5. Churned vs Active Users Comparison
     st.subheader(_("churned_vs_active_users_comparison"))
-    comparison_cols = ['visits_per_month', 'days_since_last_visit', 'avg_session_duration_min', 
-                       'visit_frequency_trend', 'num_classes_enrolled']
+
+    # Select data
     churned = features_df[features_df['CHURNED'] == 1]
     active = features_df[features_df['CHURNED'] == 0]
 
+    # Define features to compare with readable labels
+    feature_comparisons = {
+        'visits_per_month': 'Visits per Month',
+        'days_since_last_visit': 'Days Since Last Visit',
+        'avg_session_duration_min': 'Avg Session Duration (min)',
+        'visit_frequency_trend': 'Visit Frequency Trend',
+        'num_classes_enrolled': 'Classes Enrolled'
+    }
+
+    # Create comparison data for visualization
     comparison_data = []
-    for col in comparison_cols:
+    for feature_key, feature_name in feature_comparisons.items():
         comparison_data.append({
-            'Feature': col,
-            'Churned (Mean)': churned[col].mean(),
-            'Churned (Median)': churned[col].median(),
-            'Active (Mean)': active[col].mean(),
-            'Active (Median)': active[col].median(),
+            'Feature': feature_name,
+            'Churned': churned[feature_key].mean(),
+            'Active': active[feature_key].mean(),
+            'Feature_Key': feature_key
         })
-    # Soft gray background table with inline styles
-    st.markdown("""
-    <style>
-    /* Force gray background on specific table */
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame {
-        background-color: #f5f5f5 !important;
-    }
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame thead th {
-        background-color: #e0e0e0 !important;
-        color: #333333 !important;
-    }
-    div[data-testid="stVerticalBlock"] div[data-testid="stDataFrame"]:nth-of-type(3) .stDataFrame tbody td {
-        background-color: #f5f5f5 !important;
-        color: #333333 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    st.dataframe(pd.DataFrame(comparison_data).set_index('Feature'))
+
+    comparison_df = pd.DataFrame(comparison_data)
+
+    # Create grouped bar chart
+    fig, ax = plt.subplots(figsize=(14, 8))
+
+    # Set up the bar positions
+    x = np.arange(len(comparison_df))
+    width = 0.35
+
+    # Create bars
+    churned_bars = ax.bar(x - width/2, comparison_df['Churned'], width,
+                          label='Churned Users', color='#FF6B6B', alpha=0.8)
+    active_bars = ax.bar(x + width/2, comparison_df['Active'], width,
+                         label='Active Users', color='#4ade80', alpha=0.8)
+
+    # Customize the plot
+    ax.set_xlabel('', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Average Value', fontsize=12, fontweight='bold')
+    ax.set_title('', fontsize=14, fontweight='bold', pad=20)
+    ax.set_xticks(x)
+    ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10)
+    ax.legend(fontsize=11)
+
+    # Add grid for better readability
+    ax.grid(axis='y', alpha=0.3)
+
+    # Add value labels on bars
+    def add_value_labels(bars):
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
+                    f'{height:.1f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+
+    add_value_labels(churned_bars)
+    add_value_labels(active_bars)
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
+    # Add summary statistics table below the chart
+    st.markdown("### Summary Statistics")
+    summary_data = []
+    for feature_key, feature_name in feature_comparisons.items():
+        churned_mean = churned[feature_key].mean()
+        active_mean = active[feature_key].mean()
+        difference = ((churned_mean - active_mean) / active_mean * 100) if active_mean != 0 else 0
+
+        summary_data.append({
+            'Feature': feature_name,
+            'Churned (Mean)': f"{churned_mean:.2f}",
+            'Active (Mean)': f"{active_mean:.2f}",
+            'Difference (%)': f"{difference:+.1f}%"
+        })
+
+    st.dataframe(pd.DataFrame(summary_data).set_index('Feature'), use_container_width=True)
 
 if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
