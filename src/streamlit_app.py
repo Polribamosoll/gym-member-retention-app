@@ -16,6 +16,18 @@ from auxiliar.auxiliar import engineer_features
 from src.churn_model import train_churn_model, evaluate_model, get_feature_importance, predict_churn_risk, save_model, load_model, FEATURE_COLUMNS
 from app.lang import get_translation, LANGUAGES
 
+# Initialize session state early at module level
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "en" # Default language
+
+# Translation helper function that can be called from anywhere
+def translate(key, **kwargs):
+    """Translate a key using the current session language"""
+    current_lang = st.session_state.get("lang", "en")
+    return get_translation(current_lang, key, **kwargs)
+
 # --- User Management (for demo purposes) ---
 USERS_FILE = Path("users.json")
 
@@ -224,6 +236,7 @@ def main_app():
     </style>
     """, unsafe_allow_html=True)
 
+
     st.title(_("gym_churn_predictor_dashboard"))
     st.markdown(f"<p style='text-align: center; color: #4ade80; font-size: 1.1em; font-weight: bold;'><i>{_('ai_powered_insights')}</i></p>", unsafe_allow_html=True)
 
@@ -239,7 +252,115 @@ def main_app():
     model_path = Path.cwd().parent / 'output' / 'churn_model.joblib'
     if model_path.exists():
         model = load_model(str(model_path))
-        st.success(_("trained_model_loaded_successfully"))
+        col1, col2 = st.columns([0.9, 0.1])
+        with col1:
+            st.success(_("trained_model_loaded_successfully"))
+        with col2:
+            # Get current language with fallback
+            current_lang = st.session_state.get("lang", "en")
+
+            if st.button("ℹ️", key="model_info", help=translate("how_the_ai_model_works")):
+                # Create a modal dialog for the documentation
+                @st.dialog(translate("how_the_ai_model_works"))
+                def show_model_documentation():
+                    # Apply the same dark theme styling to the modal
+                    st.markdown("""
+                    <style>
+                    /* Modal dark theme styling - more specific selectors */
+                    .stDialog {
+                        background-color: #2a2a2a !important;
+                    }
+                    .stDialog [data-testid="stDialog"] {
+                        background-color: #2a2a2a !important;
+                    }
+                    /* Target modal content area */
+                    [data-testid="stDialog"] .stVerticalBlock {
+                        background-color: #2a2a2a !important;
+                    }
+                    /* Force all modal elements to have dark background */
+                    [data-testid="stDialog"],
+                    [data-testid="stDialog"] *,
+                    [data-testid="stDialog"] .stVerticalBlock,
+                    [data-testid="stDialog"] .stMarkdown,
+                    [data-testid="stDialog"] .stText {
+                        background-color: #2a2a2a !important;
+                        color: #ffffff !important;
+                    }
+                    /* Headers in modal */
+                    [data-testid="stDialog"] h1,
+                    [data-testid="stDialog"] h2,
+                    [data-testid="stDialog"] h3,
+                    [data-testid="stDialog"] h4 {
+                        color: #4ade80 !important;
+                    }
+                    /* Success messages in modal */
+                    [data-testid="stDialog"] .stSuccess > div {
+                        background-color: rgba(74, 222, 128, 0.1) !important;
+                        border-color: #4ade80 !important;
+                        color: #ffffff !important;
+                    }
+                    /* Override any default white backgrounds */
+                    [data-testid="stDialog"] .stMarkdown,
+                    [data-testid="stDialog"] p,
+                    [data-testid="stDialog"] div {
+                        background-color: transparent !important;
+                        color: #ffffff !important;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
+
+                    # Title with app's green color
+                    st.markdown(f"<h1 style='text-align: center; color: #4ade80; margin-bottom: 30px;'>{ translate('model_explanation_title') }</h1>", unsafe_allow_html=True)
+
+                    # Main explanation text with white color
+                    st.markdown(f"<div style='font-size: 18px; line-height: 1.7; margin-bottom: 30px; text-align: center; color: #ffffff;'>{ translate('model_explanation_text') }</div>", unsafe_allow_html=True)
+
+                    # Steps in a more readable format
+                    st.markdown(f"## 🔍 **{translate('how_it_works_section')}**")
+                    st.markdown("")
+
+                    # Create columns for better layout
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        # Step 1
+                        st.markdown(f"### 1️⃣ {translate('data_collection_title')}")
+                        st.markdown(f"""
+                        <div style='font-size: 16px; margin-bottom: 20px; padding: 15px; background-color: #1a1a1a; border-radius: 8px; border-left: 4px solid #4ade80; min-height: 100px; color: #ffffff;'>
+                        {translate('model_step_1')}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # Step 2
+                        st.markdown(f"### 2️⃣ {translate('pattern_recognition_title')}")
+                        st.markdown(f"""
+                        <div style='font-size: 16px; margin-bottom: 20px; padding: 15px; background-color: #1a1a1a; border-radius: 8px; border-left: 4px solid #4ade80; min-height: 100px; color: #ffffff;'>
+                        {translate('model_step_2')}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    with col2:
+                        # Step 3
+                        st.markdown(f"### 3️⃣ {translate('risk_prediction_title')}")
+                        st.markdown(f"""
+                        <div style='font-size: 16px; margin-bottom: 20px; padding: 15px; background-color: #1a1a1a; border-radius: 8px; border-left: 4px solid #4ade80; min-height: 100px; color: #ffffff;'>
+                        {translate('model_step_3')}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # Step 4
+                        st.markdown(f"### 4️⃣ {translate('actionable_insights_title')}")
+                        st.markdown(f"""
+                        <div style='font-size: 16px; margin-bottom: 20px; padding: 15px; background-color: #1a1a1a; border-radius: 8px; border-left: 4px solid #4ade80; min-height: 100px; color: #ffffff;'>
+                        {translate('model_step_4')}
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # Why it's important
+                    st.markdown(f"## 🎯 **{translate('why_this_matters_section')}**")
+                    st.success(f"💡 { translate('model_why_important') }")
+
+                show_model_documentation()
     else:
         st.warning(_("no_trained_model_found"))
         model, X_test, y_test = train_churn_model(features_df)
@@ -538,11 +659,6 @@ def main_app():
 
     st.dataframe(pd.DataFrame(summary_data).set_index('Feature'), use_container_width=True)
 
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-
-if "lang" not in st.session_state:
-    st.session_state["lang"] = "en" # Default language
 
 # Language selector with custom styling
 with st.sidebar:
@@ -663,15 +779,18 @@ with st.sidebar:
 
     </style>
     """, unsafe_allow_html=True)
+
+    # Language selector
     selected_lang_name = st.selectbox("Language", options=list(LANGUAGES.values()), index=list(LANGUAGES.keys()).index(st.session_state["lang"]))
 
-# Update session state if language changes
-selected_lang_code = [code for code, name in LANGUAGES.items() if name == selected_lang_name][0]
-if selected_lang_code != st.session_state["lang"]:
-    st.session_state["lang"] = selected_lang_code
-    st.rerun()
+    # Update session state if language changes
+    selected_lang_code = [code for code, name in LANGUAGES.items() if name == selected_lang_name][0]
+    if selected_lang_code != st.session_state["lang"]:
+        st.session_state["lang"] = selected_lang_code
+        st.rerun()
 
-_ = lambda key, **kwargs: get_translation(st.session_state["lang"], key, **kwargs)
+    # Define translation function
+    _ = lambda key, **kwargs: get_translation(st.session_state["lang"], key, **kwargs)
 
 if not st.session_state["logged_in"]:
     login_page()
