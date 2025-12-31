@@ -7,6 +7,8 @@ import json
 import plotly.express as px
 import matplotlib.pyplot as plt
 import numpy as np
+from datetime import datetime
+import os
 from contextlib import contextmanager
 
 # Add project root to path for imports
@@ -48,6 +50,78 @@ def loading_state(key: str):
         yield
     finally:
         set_loading(key, False)
+
+# Reusable footer
+def render_footer():
+    year = datetime.now().year
+    app_name = "Gym Churn Predictor"
+    version = os.getenv("APP_VERSION", "v1.0")
+    phone = "+34 650998877"
+    email = "customer.service@memberpulse.com"
+    footer_bg = "#0a0a0a"
+    separator = "rgba(255,255,255,0.05)"
+
+    st.markdown(
+        f"""
+        <style>
+        .app-footer {{
+            background: {footer_bg};
+            padding: 10px 16px;
+            border-top: 1px solid {separator};
+            color: #9ca3af;
+            font-size: 12px;
+        }}
+        .app-footer .footer-inner {{
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }}
+        .app-footer .footer-group {{
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }}
+        .app-footer .footer-link {{
+            color: #9ca3af;
+            text-decoration: none;
+        }}
+        .app-footer .footer-link:hover {{
+            color: #4ade80;
+        }}
+        .app-footer .muted {{
+            color: #9ca3af;
+            opacity: 0.9;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="app-footer">
+            <div class="footer-inner">
+                <div class="footer-group">
+                    <span class="muted">Customer Service:</span>
+                    <span>{phone}</span>
+                    <span>•</span>
+                    <a class="footer-link" href="mailto:{email}">{email}</a>
+                </div>
+                <div class="footer-group">
+                    <span>{app_name}</span>
+                    <span>•</span>
+                    <span>© {year}</span>
+                    <span>•</span>
+                    <span>{version}</span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # --- Reusable Loading Indicator --- (New Section)
 
@@ -786,6 +860,10 @@ def main_app():
         })
 
     st.dataframe(pd.DataFrame(summary_data).set_index('Feature'), use_container_width=True)
+
+    # Footer spacing and render
+    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+    render_footer()
 
 
 # Language selector with custom styling
