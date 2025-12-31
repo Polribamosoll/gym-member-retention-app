@@ -4,6 +4,15 @@ LANGUAGES = {
     "ca": "Català",
 }
 
+def get_translation(lang_code, key, **kwargs):
+    """Retrieve a translation with graceful fallback."""
+    translations = TRANSLATIONS.get(lang_code, TRANSLATIONS.get("en", {}))
+    text = translations.get(key, f"MISSING_TRANSLATION[{key}]")
+    try:
+        return text.format(**kwargs)
+    except Exception:
+        return text
+
 TRANSLATIONS = {
     "en": {
         "gym_churn_predictor": "GYM CHURN PREDICTOR",
@@ -62,6 +71,9 @@ TRANSLATIONS = {
         "pattern_recognition_title": "Pattern Recognition",
         "risk_prediction_title": "Risk Prediction",
         "actionable_insights_title": "Actionable Insights",
+        "model_documentation_loading_title": "AI Model Documentation",
+        "loading_message": "Loading...",
+        "loading_users_message": "Loading users..."
     },
     "es": {
         "gym_churn_predictor": "PREDICTOR DE BAJA DE GIMNASIO",
@@ -120,6 +132,9 @@ TRANSLATIONS = {
         "pattern_recognition_title": "Reconocimiento de Patrones",
         "risk_prediction_title": "Predicción de Riesgo",
         "actionable_insights_title": "Información Accionable",
+        "model_documentation_loading_title": "Documentación del Modelo de IA",
+        "loading_message": "Cargando...",
+        "loading_users_message": "Cargando usuarios..."
     },
     "ca": {
         "gym_churn_predictor": "PREDICTOR DE BAIMES DE GIMNÀS",
@@ -178,11 +193,8 @@ TRANSLATIONS = {
         "pattern_recognition_title": "Reconeixement de Patrons",
         "risk_prediction_title": "Predicció de Risc",
         "actionable_insights_title": "Informació Accionable",
-    },
+        "model_documentation_loading_title": "Documentació del Model d'IA",
+        "loading_message": "Carregant...",
+        "loading_users_message": "Carregant usuaris..."
+    }
 }
-
-def get_translation(lang_code, key, **kwargs):
-    translations = TRANSLATIONS.get(lang_code, TRANSLATIONS["en"])
-    text = translations.get(key, f"MISSING_TRANSLATION[{key}]")
-    return text.format(**kwargs)
-

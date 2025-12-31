@@ -7,6 +7,7 @@ import json
 import plotly.express as px
 import matplotlib.pyplot as plt
 import numpy as np
+from contextlib import contextmanager
 
 # Add project root to path for imports
 import sys
@@ -21,6 +22,8 @@ if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 if "lang" not in st.session_state:
     st.session_state["lang"] = "en" # Default language
+if "loading_states" not in st.session_state:
+    st.session_state["loading_states"] = {}
 
 # Translation helper function that can be called from anywhere
 def translate(key, **kwargs):
@@ -28,7 +31,86 @@ def translate(key, **kwargs):
     current_lang = st.session_state.get("lang", "en")
     return get_translation(current_lang, key, **kwargs)
 
-# --- User Management (for demo purposes) ---
+# Generic loading state helpers
+def set_loading(key: str, value: bool) -> None:
+    st.session_state["loading_states"][key] = value
+
+def is_loading(key: str) -> bool:
+    return st.session_state["loading_states"].get(key, False)
+
+def any_loading(*keys: str) -> bool:
+    return any(is_loading(k) for k in keys)
+
+@contextmanager
+def loading_state(key: str):
+    set_loading(key, True)
+    try:
+        yield
+    finally:
+        set_loading(key, False)
+
+    # --- Reusable Loading Indicator --- (New Section)
+
+    if "app_loading_states" not in st.session_state:
+        st.session_state.app_loading_states = {}
+
+    def set_app_loading_state(key, is_loading, message_key=None, default_message="Loading..."):
+        """Sets the loading state for a specific UI element."""
+        if key not in st.session_state.app_loading_states:
+            st.session_state.app_loading_states[key] = {"is_loading": False, "message": ""}
+
+        st.session_state.app_loading_states[key]["is_loading"] = is_loading
+        if message_key:
+            st.session_state.app_loading_states[key]["message"] = translate(message_key, default=default_message)
+        else:
+            st.session_state.app_loading_states[key]["message"] = default_message
+        st.rerun()
+
+    import contextlib
+    import time
+
+    @contextlib.contextmanager
+    def st_loader(key, default_message_key=None, is_full_width=False, height=None):
+        """A context manager for showing a loading indicator in Streamlit.
+        Usage:
+            with st_loader("my_data_table_loader", default_message_key="loading_data"):  # or is_full_width=True
+                # Load your data here
+                time.sleep(2)
+                st.write("Data Loaded!")
+        """
+        if key not in st.session_state.app_loading_states:
+            st.session_state.app_loading_states[key] = {"is_loading": False, "message": ""}
+        
+        # Get current loading state and message
+        loading_state = st.session_state.app_loading_states[key]["is_loading"]
+        loading_message = st.session_state.app_loading_states[key]["message"]
+
+        if not loading_state: # If not already loading, start loading
+            set_app_loading_state(key, True, message_key=default_message_key)
+            yield # Allow the block to execute and rerun
+        else: # If currently loading, display the loader
+            if is_full_width:
+                # Full-width loading overlay for tables or sections
+                with st.container():
+                    col1, col2, col3 = st.columns([1, 2, 1])
+                    with col2:
+                        st.markdown(f"""
+                        <div style='text-align: center; padding: {height or 50}px; background-color: #1a1a1a; border-radius: 10px; margin: 10px 0;'>
+                            <h4 style='color: #4ade80; margin-bottom: 10px;'>🔄 {loading_message}</h4>
+                            <div style='color: #ffffff;'>Please wait...</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.spinner("")
+            else:
+                # Inline spinner for buttons or small content areas
+                st.spinner(loading_message)
+
+            try:
+                yield # Allow the block to execute (it should trigger a rerun when done)
+            finally:
+                set_app_loading_state(key, False) # Ensure loading state is reset
+
+    # --- User Management (for demo purposes) ---
 USERS_FILE = Path("users.json")
 
 def load_users():
@@ -263,6 +345,33 @@ def main_app():
                 # Create a modal dialog for the documentation
                 @st.dialog(translate("how_the_ai_model_works"))
                 def show_model_documentation():
+                    # Create a placeholder for the loading/content
+                    content_placeholder = st.empty()
+
+                    # Show prominent loading spinner first
+                    with content_placeholder.container():
+                        # Center the loading content
+                        col1, col2, col3 = st.columns([1, 2, 1])
+
+                        with col2:
+                            st.markdown(
+                                f"""
+                                <div style='text-align: center; padding: 50px;'>
+                                    <h2 style='color: #4ade80; margin-bottom: 30px;'>🤖 {translate('model_documentation_loading_title')}</h2>
+                                    <div style='font-size: 18px; color: #ffffff; margin-bottom: 20px;'>{translate('loading_message')}</div>
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+
+                            with st.spinner(""):
+                                import time
+                                time.sleep(1.0)  # Slightly longer loading animation
+
+                    # Clear the placeholder and show the actual content
+                    content_placeholder.empty()
+
+                    # Now show the actual documentation content
                     # Apply the same dark theme styling to the modal
                     st.markdown("""
                     <style>
@@ -506,6 +615,40 @@ def main_app():
         'risk_level': 'Risk Level' 
     }
     
+    # Buttons for pagination with reusable loading indicators
+    col_buttons1, col_buttons2 = st.columns([1, 1])
+
+    # Track whether we should show a one-time loading state this run
+    table_loading = False
+
+    with col_buttons1:
+        if st.session_state.user_offset > 0:
+            if st.button(_("back_to_first_10")):
+                table_loading = True
+                st.session_state.user_offset = 0
+
+    with col_buttons2:
+        if st.session_state.user_offset + 10 < len(risk_df):
+            if st.button(_("load_next_10_at_risk_users")):
+                table_loading = True
+                st.session_state.user_offset += 10
+
+    # Inline loader feedback for pagination actions
+    loader_placeholder = st.empty()
+    if table_loading:
+        with loader_placeholder.container():
+            st.markdown("""
+            <div style='text-align: center; padding: 16px; background-color: #1a1a1a; border-radius: 10px; margin: 6px 0;'>
+                <h4 style='color: #4ade80; margin-bottom: 8px;'>🔄 Loading users...</h4>
+                <div style='color: #ffffff;'>Please wait a moment.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            with st.spinner(translate("loading_users_message", default="Loading users...")):
+                import time
+                time.sleep(0.5)
+        # Clear loader once data is ready to render
+        loader_placeholder.empty()
+
     # Get the current slice of users
     current_users_df = risk_df.iloc[st.session_state.user_offset : st.session_state.user_offset + 10]
 
@@ -519,21 +662,6 @@ def main_app():
             return [''] * len(row)
 
     st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
-
-    # Buttons for pagination
-    col_buttons1, col_buttons2 = st.columns([1, 1])
-
-    with col_buttons1:
-        if st.session_state.user_offset > 0:
-            if st.button(_("back_to_first_10")):
-                st.session_state.user_offset = 0
-                st.rerun()
-
-    with col_buttons2:
-        if st.session_state.user_offset + 10 < len(risk_df):
-            if st.button(_("load_next_10_at_risk_users")):
-                st.session_state.user_offset += 10
-                st.rerun()
 
     # 4. Feature Importance
     st.subheader(_("feature_importance"))
