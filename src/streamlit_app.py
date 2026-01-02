@@ -844,8 +844,6 @@ def main_app():
     plt.tight_layout()
     st.pyplot(fig)
 
-    # Add summary statistics table below the chart
-    st.markdown(f"### {_('summary_statistics')}")
     summary_data = []
     for feature_key, feature_name in feature_comparisons.items():
         churned_mean = churned[feature_key].mean()
@@ -854,12 +852,56 @@ def main_app():
 
         summary_data.append({
             'Feature': feature_name,
-            'Churned (Mean)': f"{churned_mean:.2f}",
-            'Active (Mean)': f"{active_mean:.2f}",
-            'Difference (%)': f"{difference:+.1f}%"
+            'Churned (Mean)': churned_mean,
+            'Active (Mean)': active_mean,
+            'Difference (%)': difference
         })
 
-    st.dataframe(pd.DataFrame(summary_data).set_index('Feature'), use_container_width=True)
+    summary_df = pd.DataFrame(summary_data).set_index('Feature')
+
+    # Apply app-themed styling to the summary table
+    def diff_cell_style(val):
+        if val > 0:
+            return 'background-color: rgba(74, 222, 128, 0.15); color: #e5e7eb;'
+        if val < 0:
+            return 'background-color: rgba(255, 127, 127, 0.15); color: #e5e7eb;'
+        return ''
+
+    styled_summary = (
+        summary_df.style
+        .format({
+            'Churned (Mean)': "{:.2f}",
+            'Active (Mean)': "{:.2f}",
+            'Difference (%)': "{:+.1f}%"
+        })
+        .set_table_styles([
+            {'selector': 'table', 'props': [
+                ('background-color', '#0a0a0a'),
+                ('color', '#e5e7eb'),
+                ('border', '1px solid #1f1f1f'),
+                ('border-collapse', 'collapse')
+            ]},
+            {'selector': 'thead th', 'props': [
+                ('background', 'linear-gradient(90deg, #4ade80 0%, #22c55e 100%)'),
+                ('color', '#000000'),
+                ('font-weight', 'bold'),
+                ('border-bottom', '1px solid #4ade80'),
+                ('padding', '10px')
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('background-color', '#0f0f0f'),
+                ('color', '#e5e7eb'),
+                ('border-bottom', '1px solid #1f1f1f'),
+                ('padding', '8px 10px')
+            ]},
+            {'selector': 'tbody tr:nth-child(even) td', 'props': [
+                ('background-color', '#111111')
+            ]},
+        ])
+        .applymap(diff_cell_style, subset=pd.IndexSlice[:, ['Difference (%)']])
+    )
+
+    st.dataframe(styled_summary, use_container_width=True)
 
     # Footer spacing and render
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
