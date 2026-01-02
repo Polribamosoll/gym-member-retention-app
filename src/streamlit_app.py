@@ -862,10 +862,10 @@ def main_app():
     # Apply app-themed styling to the summary table
     def diff_cell_style(val):
         if val > 0:
-            return 'background-color: rgba(74, 222, 128, 0.15); color: #e5e7eb;'
+            return 'background-color: rgba(74, 222, 128, 0.18); color: #000000; font-weight: 700;'
         if val < 0:
-            return 'background-color: rgba(255, 127, 127, 0.15); color: #e5e7eb;'
-        return ''
+            return 'background-color: rgba(255, 127, 127, 0.18); color: #000000; font-weight: 700;'
+        return 'color: #000000; font-weight: 700;'
 
     styled_summary = (
         summary_df.style
@@ -882,7 +882,7 @@ def main_app():
                 ('border-collapse', 'collapse')
             ]},
             {'selector': 'thead th', 'props': [
-                ('background', 'linear-gradient(90deg, #4ade80 0%, #22c55e 100%)'),
+                ('background', '#cce6ff'),
                 ('color', '#000000'),
                 ('font-weight', 'bold'),
                 ('border-bottom', '1px solid #4ade80'),
