@@ -353,21 +353,18 @@ def login_page():
             st.markdown("---")
             st.markdown("### Upload your CSVs to populate the app")
             st.caption("You can generate these files from `notebooks/test_data_generation.ipynb`. Upload `user_information.csv` and `user_visits.csv`.")
-            col_u1, col_u2 = st.columns(2)
-            with col_u1:
-                users_upload = st.file_uploader("Upload Users CSV", key="upload_users_csv", type="csv")
-                if st.button("Save Users CSV"):
-                    if save_uploaded_csv(users_upload, "user_information.csv"):
-                        st.success("Users CSV uploaded successfully.")
+            users_upload = st.file_uploader("Upload Users CSV", key="upload_users_csv", type="csv")
+            visits_upload = st.file_uploader("Upload Visits CSV", key="upload_visits_csv", type="csv")
+            if st.button("Upload CSV files"):
+                if users_upload is None or visits_upload is None:
+                    st.error("You need to upload both datasets.")
+                else:
+                    ok_users = save_uploaded_csv(users_upload, "user_information.csv")
+                    ok_visits = save_uploaded_csv(visits_upload, "user_visits.csv")
+                    if ok_users and ok_visits:
+                        st.success("Both CSV files uploaded successfully.")
                     else:
-                        st.warning("Please select a Users CSV file first.")
-            with col_u2:
-                visits_upload = st.file_uploader("Upload Visits CSV", key="upload_visits_csv", type="csv")
-                if st.button("Save Visits CSV"):
-                    if save_uploaded_csv(visits_upload, "user_visits.csv"):
-                        st.success("Visits CSV uploaded successfully.")
-                    else:
-                        st.warning("Please select a Visits CSV file first.")
+                        st.error("There was a problem saving the files. Please try again.")
             st.caption("Once uploaded, proceed to log in and the app will use these datasets.")
         
         # Adding some spacing at the bottom
