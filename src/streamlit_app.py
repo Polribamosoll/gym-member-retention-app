@@ -51,6 +51,16 @@ def loading_state(key: str):
     finally:
         set_loading(key, False)
 
+def save_uploaded_csv(uploaded_file, target_filename: str):
+    """Save uploaded CSV to data directory."""
+    if uploaded_file is None:
+        return False
+    data_dir = Path.cwd() / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    df = pd.read_csv(uploaded_file)
+    df.to_csv(data_dir / target_filename, index=False)
+    return True
+
 # Reusable footer
 def render_footer():
     year = datetime.now().year
@@ -336,6 +346,29 @@ def login_page():
                         save_users(USERS)  # Save to file
                         st.success(_("account_created_successfully"))
                         st.balloons()
+                        st.session_state["show_upload_after_register"] = True
+        
+        # Upload CSVs after registration (from notebook)
+        if st.session_state.get("show_upload_after_register"):
+            st.markdown("---")
+            st.markdown("### Upload your CSVs to populate the app")
+            st.caption("You can generate these files from `notebooks/test_data_generation.ipynb`. Upload `user_information.csv` and `user_visits.csv`.")
+            col_u1, col_u2 = st.columns(2)
+            with col_u1:
+                users_upload = st.file_uploader("Upload Users CSV", key="upload_users_csv", type="csv")
+                if st.button("Save Users CSV"):
+                    if save_uploaded_csv(users_upload, "user_information.csv"):
+                        st.success("Users CSV uploaded successfully.")
+                    else:
+                        st.warning("Please select a Users CSV file first.")
+            with col_u2:
+                visits_upload = st.file_uploader("Upload Visits CSV", key="upload_visits_csv", type="csv")
+                if st.button("Save Visits CSV"):
+                    if save_uploaded_csv(visits_upload, "user_visits.csv"):
+                        st.success("Visits CSV uploaded successfully.")
+                    else:
+                        st.warning("Please select a Visits CSV file first.")
+            st.caption("Once uploaded, proceed to log in and the app will use these datasets.")
         
         # Adding some spacing at the bottom
         st.markdown("<br><br>", unsafe_allow_html=True)
