@@ -669,9 +669,11 @@ def main_app():
     st.write(_("high_risk_users_message", n=num_high_risk_users))
 
 
-    # Initialize session state for user_offset if not already set
+    # Initialize session state for user_offset and loading flag if not already set
     if 'user_offset' not in st.session_state:
         st.session_state.user_offset = 0
+    if 'table_loading' not in st.session_state:
+        st.session_state["table_loading"] = False
 
     # Define a mapping for more readable column names
     column_name_mapping = {
@@ -695,14 +697,12 @@ def main_app():
     # Buttons for pagination with reusable loading indicators
     col_buttons1, col_buttons2 = st.columns([1, 1])
 
-    # Track whether we should show a one-time loading state this run
-    table_loading = False
-
     with col_buttons1:
         if st.session_state.user_offset > 0:
             back_clicked = st.button(_("back_to_first_10"))
             if back_clicked:
                 st.session_state.user_offset = 0
+                st.session_state["table_loading"] = True
                 st.rerun()
 
     with col_buttons2:
@@ -710,11 +710,12 @@ def main_app():
         next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
         if next_clicked:
             st.session_state.user_offset += 10
+            st.session_state["table_loading"] = True
             st.rerun()
 
     # Inline loader feedback for pagination actions
     loader_placeholder = st.empty()
-    if table_loading:
+    if st.session_state.get("table_loading"):
         with loader_placeholder.container():
             st.markdown("""
             <div style='text-align: center; padding: 16px; background-color: #1a1a1a; border-radius: 10px; margin: 6px 0;'>
@@ -727,6 +728,7 @@ def main_app():
                 time.sleep(0.5)
         # Clear loader once data is ready to render
         loader_placeholder.empty()
+        st.session_state["table_loading"] = False
 
     # Get the current slice of users
     current_users_df = risk_df.iloc[st.session_state.user_offset : st.session_state.user_offset + 10]
