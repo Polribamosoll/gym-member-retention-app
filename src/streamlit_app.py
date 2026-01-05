@@ -1043,7 +1043,28 @@ def main_app():
         fig_heat.update_layout(
             xaxis_title=f"{bucket_size}-hour bucket (open hours)",
             yaxis_title="Date",
+            plot_bgcolor="#0a0a0a",
+            paper_bgcolor="#0a0a0a",
+            coloraxis_colorbar=dict(
+                title="Entries",
+                title_font=dict(color="#e5e7eb"),
+                tickfont=dict(color="#e5e7eb"),
+            ),
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                tickfont=dict(color="#e5e7eb"),
+                title_font=dict(color="#e5e7eb"),
+            ),
+            yaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                tickfont=dict(color="#e5e7eb"),
+                title_font=dict(color="#e5e7eb"),
+            ),
+            margin=dict(l=0, r=0, t=0, b=0),
         )
+        fig_heat.update_traces(hovertemplate="Date: %{y}<br>Bucket: %{x}<br>Entries: %{z}<extra></extra>")
         st.plotly_chart(fig_heat, use_container_width=True)
 
         ts_counts = (
@@ -1124,8 +1145,8 @@ def main_app():
                 "Churn Rate (%)": translate("churn_rate_axis", default="Churn rate (%)"),
             },
         )
-        # Base line and points in black
-        fig_curve.update_traces(line_color="#000000", marker_color="#000000")
+        # Base line and points in white for contrast
+        fig_curve.update_traces(line_color="#ffffff", marker_color="#ffffff")
         # Add linear trend line in green (only if at least 2 valid points)
         churn_clean = churn_curve.dropna(subset=["Churn Rate (%)"])
         if len(churn_clean) >= 2:
@@ -1145,6 +1166,10 @@ def main_app():
             xaxis_title=translate("time_since_registration_axis", default="Time since registration (months)"),
             yaxis_title=translate("churn_rate_axis", default="Churn rate (%)"),
             hovermode="x unified",
+            plot_bgcolor="#0a0a0a",
+            paper_bgcolor="#0a0a0a",
+            xaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
+            yaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
         )
         st.plotly_chart(fig_curve, use_container_width=True)
 
