@@ -952,8 +952,8 @@ def main_app():
     fig_evo.update_layout(xaxis_title="", yaxis_title="Users", xaxis_tickangle=-45)
     st.plotly_chart(fig_evo, use_container_width=True)
 
-    # Activity heatmap (open hours buckets, last 2 months)
-    st.markdown("#### Activity heatmap (open hours, last 2 months)")
+    # Activity heatmap and time series (open hours buckets, last 2 months)
+    st.markdown("#### Activity heatmap and time series (open hours, last 2 months)")
     heat_start = (today - pd.DateOffset(months=2)).normalize()
     visits_recent = visits_df[visits_df['ENTRY_TIME'] >= heat_start].copy()
     if not visits_recent.empty:
@@ -1000,6 +1000,28 @@ def main_app():
             yaxis_title="Date",
         )
         st.plotly_chart(fig_heat, use_container_width=True)
+
+        ts_counts = (
+            heat_counts
+            .groupby('date')['count']
+            .sum()
+            .reset_index()
+            .sort_values('date')
+        )
+        ts_counts['date'] = pd.to_datetime(ts_counts['date'])
+        ts_counts['is_weekend'] = ts_counts['date'].dt.dayofweek >= 5
+        ts_counts['color'] = ts_counts['is_weekend'].map({True: "#f472b6", False: "#4ade80"})
+        fig_ts = px.bar(
+            ts_counts,
+            x='date',
+            y='count',
+            labels={'date': 'Date', 'count': 'Entries'},
+            color='color',
+            color_discrete_map="identity",
+        )
+        fig_ts.update_layout(xaxis_title="", yaxis_title="Entries", xaxis_tickangle=-45)
+        fig_ts.update_traces(showlegend=False)
+        st.plotly_chart(fig_ts, use_container_width=True)
     else:
         st.info("No visits in the last 2 months to display.")
 
