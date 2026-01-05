@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import joblib
 import json
+import io
 import plotly.express as px
 import matplotlib.pyplot as plt
 import numpy as np
@@ -743,6 +744,18 @@ def main_app():
             return [''] * len(row)
 
     st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
+
+    # Download full list (all at-risk users) below the table
+    export_buffer = io.BytesIO()
+    risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
+    export_buffer.seek(0)
+    st.download_button(
+        label="Download Excel",
+        data=export_buffer,
+        file_name="at_risk_users.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        type="primary",
+    )
 
     # 4. Feature Importance
     st.subheader(_("feature_importance"))
