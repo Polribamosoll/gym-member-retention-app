@@ -910,6 +910,48 @@ def main_app():
 
     st.dataframe(styled_summary, use_container_width=True)
 
+    # Users evolution (last 12 months)
+    st.subheader("Users evolution")
+    today = pd.Timestamp.today().normalize()
+    start_month = (today - pd.DateOffset(months=11)).replace(day=1)
+    months_range = pd.date_range(start_month, today, freq='MS')
+
+    evolution_rows = []
+    for month_start in months_range:
+        month_end = month_start + pd.offsets.MonthEnd(1)
+        label = month_start.strftime("%Y-%m")
+        new_count = users_df[users_df['REGISTRATION_DATE'].dt.to_period('M') == month_start.to_period('M')].shape[0]
+        churned_count = users_df[
+            users_df['MEMBERSHIP_END_DATE'].notna() &
+            (users_df['MEMBERSHIP_END_DATE'].dt.to_period('M') == month_start.to_period('M'))
+        ].shape[0]
+        active_count = users_df[
+            (users_df['REGISTRATION_DATE'] <= month_end) &
+            (
+                users_df['MEMBERSHIP_END_DATE'].isna() |
+                (users_df['MEMBERSHIP_END_DATE'] > month_end)
+            )
+        ].shape[0]
+        evolution_rows.append(
+            {"Month": label, "Active": active_count, "New": new_count, "Churned": churned_count}
+        )
+
+    evolution_df = pd.DataFrame(evolution_rows)
+    fig_evo = px.bar(
+        evolution_df,
+        x="Month",
+        y=["Active", "New", "Churned"],
+        barmode="group",
+        title="",
+        color_discrete_map={
+            "Active": "#4ade80",
+            "New": "#60a5fa",
+            "Churned": "#f472b6",
+        },
+    )
+    fig_evo.update_layout(xaxis_title="", yaxis_title="Users", xaxis_tickangle=-45)
+    st.plotly_chart(fig_evo, use_container_width=True)
+
     # Footer spacing and render
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
     render_footer()
