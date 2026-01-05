@@ -952,6 +952,57 @@ def main_app():
     fig_evo.update_layout(xaxis_title="", yaxis_title="Users", xaxis_tickangle=-45)
     st.plotly_chart(fig_evo, use_container_width=True)
 
+    # Activity heatmap (open hours buckets, last 2 months)
+    st.markdown("#### Activity heatmap (open hours, last 2 months)")
+    heat_start = (today - pd.DateOffset(months=2)).normalize()
+    visits_recent = visits_df[visits_df['ENTRY_TIME'] >= heat_start].copy()
+    if not visits_recent.empty:
+        max_date = visits_recent['ENTRY_TIME'].max().normalize()
+    else:
+        max_date = today
+    open_start_hour = 8   # gym opens at 08:00
+    open_end_hour = 22    # gym closes at 22:00
+    bucket_size = 2       # 2-hour buckets make the plot denser and focused
+    if not visits_recent.empty:
+        visits_recent['date'] = visits_recent['ENTRY_TIME'].dt.date
+        visits_recent['hour'] = visits_recent['ENTRY_TIME'].dt.hour
+
+        visits_recent = visits_recent[
+            (visits_recent['hour'] >= open_start_hour) & (visits_recent['hour'] < open_end_hour)
+        ].copy()
+
+        visits_recent['bucket_start'] = ((visits_recent['hour'] - open_start_hour) // bucket_size) * bucket_size + open_start_hour
+        visits_recent['bucket_label'] = visits_recent['bucket_start'].astype(int).astype(str).str.zfill(2) + ":00"
+
+        heat_counts = (
+            visits_recent
+            .groupby(['date', 'bucket_label'])
+            .size()
+            .reset_index(name='count')
+        )
+
+        all_buckets = [f"{str(b).zfill(2)}:00" for b in range(open_start_hour, open_end_hour, bucket_size)]
+        all_dates = pd.date_range(heat_start, max_date, freq='D').date
+        full_index = pd.MultiIndex.from_product([all_dates, all_buckets], names=['date', 'bucket_label'])
+        heat_counts = heat_counts.set_index(['date', 'bucket_label']).reindex(full_index, fill_value=0).reset_index()
+
+        heat_pivot = heat_counts.pivot(index='date', columns='bucket_label', values='count')
+        heat_pivot = heat_pivot.sort_index(ascending=False)
+
+        fig_heat = px.imshow(
+            heat_pivot,
+            color_continuous_scale="YlOrRd",
+            aspect="auto",
+            labels=dict(color="Entries"),
+        )
+        fig_heat.update_layout(
+            xaxis_title=f"{bucket_size}-hour bucket (open hours)",
+            yaxis_title="Date",
+        )
+        st.plotly_chart(fig_heat, use_container_width=True)
+    else:
+        st.info("No visits in the last 2 months to display.")
+
     # Footer spacing and render
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
     render_footer()
