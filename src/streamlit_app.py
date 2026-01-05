@@ -869,101 +869,70 @@ def main_app():
 
     comparison_df = pd.DataFrame(comparison_data)
 
-    # Create grouped bar chart
-    fig, ax = plt.subplots(figsize=(14, 8))
+    # Create grouped bar chart (polished styling)
+    fig, ax = plt.subplots(figsize=(14, 8), facecolor="#0a0a0a")
+    ax.set_facecolor("#0a0a0a")
 
     # Set up the bar positions
     x = np.arange(len(comparison_df))
     width = 0.35
 
     # Create bars
-    churned_bars = ax.bar(x - width/2, comparison_df['Churned'], width,
-                          label='Churned Users', color='#FF7F7F', alpha=0.8)
-    active_bars = ax.bar(x + width/2, comparison_df['Active'], width,
-                         label='Active Users', color='#4ade80', alpha=0.8)
+    churned_bars = ax.bar(
+        x - width/2,
+        comparison_df['Churned'],
+        width,
+        label='Churned Users',
+        color='#FF7F7F',
+        alpha=0.9,
+        edgecolor="#0f0f0f",
+        linewidth=1.0,
+    )
+    active_bars = ax.bar(
+        x + width/2,
+        comparison_df['Active'],
+        width,
+        label='Active Users',
+        color='#4ade80',
+        alpha=0.9,
+        edgecolor="#0f0f0f",
+        linewidth=1.0,
+    )
 
     # Customize the plot
-    ax.set_xlabel('', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Average Value', fontsize=12, fontweight='bold')
-    ax.set_title('', fontsize=14, fontweight='bold', pad=20)
+    ax.set_xlabel('', fontsize=12, fontweight='bold', color="#e5e7eb")
+    ax.set_ylabel('Average Value', fontsize=12, fontweight='bold', color="#e5e7eb", labelpad=8)
+    ax.set_title('', fontsize=14, fontweight='bold', pad=20, color="#e5e7eb")
     ax.set_xticks(x)
-    ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10)
-    ax.legend(fontsize=11)
+    ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10, color="#e5e7eb")
+    ax.tick_params(axis='y', colors="#e5e7eb")
+    ax.legend(fontsize=11, facecolor="#0a0a0a", edgecolor="#2a2a2a", labelcolor="#e5e7eb")
 
-    # Add grid for better readability
-    ax.grid(axis='y', alpha=0.3)
+    # Add grid and spine styling
+    ax.grid(axis='y', alpha=0.4, color="#2a2a2a")
+    for spine in ax.spines.values():
+        spine.set_color("#2a2a2a")
 
     # Add value labels on bars
     def add_value_labels(bars):
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
-                    f'{height:.1f}', ha='center', va='bottom', fontsize=11, fontweight='bold')
+            ax.text(
+                bar.get_x() + bar.get_width()/2.,
+                height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
+                f'{height:.1f}',
+                ha='center',
+                va='bottom',
+                fontsize=11,
+                fontweight='bold',
+                color="#e5e7eb",
+            )
 
     add_value_labels(churned_bars)
     add_value_labels(active_bars)
 
     plt.tight_layout()
     st.pyplot(fig)
-
-    summary_data = []
-    for feature_key, feature_name in feature_comparisons.items():
-        churned_mean = churned[feature_key].mean()
-        active_mean = active[feature_key].mean()
-        difference = ((churned_mean - active_mean) / active_mean * 100) if active_mean != 0 else 0
-
-        summary_data.append({
-            'Feature': feature_name,
-            'Churned (Mean)': churned_mean,
-            'Active (Mean)': active_mean,
-            'Difference (%)': difference
-        })
-
-    summary_df = pd.DataFrame(summary_data).set_index('Feature')
-
-    # Apply app-themed styling to the summary table
-    def diff_cell_style(val):
-        if val > 0:
-            return 'background-color: rgba(74, 222, 128, 0.18); color: #000000; font-weight: 700;'
-        if val < 0:
-            return 'background-color: rgba(255, 127, 127, 0.18); color: #000000; font-weight: 700;'
-        return 'color: #000000; font-weight: 700;'
-
-    styled_summary = (
-        summary_df.style
-        .format({
-            'Churned (Mean)': "{:.2f}",
-            'Active (Mean)': "{:.2f}",
-            'Difference (%)': "{:+.1f}%"
-        })
-        .set_table_styles([
-            {'selector': 'table', 'props': [
-                ('background-color', '#0a0a0a'),
-                ('color', '#e5e7eb'),
-                ('border', '1px solid #1f1f1f'),
-                ('border-collapse', 'collapse')
-            ]},
-            {'selector': 'thead th', 'props': [
-                ('background', '#cce6ff'),
-                ('color', '#000000'),
-                ('font-weight', 'bold'),
-                ('border-bottom', '1px solid #4ade80'),
-                ('padding', '10px')
-            ]},
-            {'selector': 'tbody td', 'props': [
-                ('background-color', '#0f0f0f'),
-                ('color', '#e5e7eb'),
-                ('border-bottom', '1px solid #1f1f1f'),
-                ('padding', '8px 10px')
-            ]},
-            {'selector': 'tbody tr:nth-child(even) td', 'props': [
-                ('background-color', '#111111')
-            ]},
-        ])
-        .applymap(diff_cell_style, subset=pd.IndexSlice[:, ['Difference (%)']])
-    )
-
-    st.dataframe(styled_summary, use_container_width=True)
 
     # Users evolution (last 12 months)
     st.subheader("Users evolution")
