@@ -700,15 +700,17 @@ def main_app():
 
     with col_buttons1:
         if st.session_state.user_offset > 0:
-            if st.button(_("back_to_first_10")):
-                table_loading = True
+            back_clicked = st.button(_("back_to_first_10"))
+            if back_clicked:
                 st.session_state.user_offset = 0
+                st.rerun()
 
     with col_buttons2:
-        if st.session_state.user_offset + 10 < len(risk_df):
-            if st.button(_("load_next_10_at_risk_users")):
-                table_loading = True
-                st.session_state.user_offset += 10
+        next_disabled = st.session_state.user_offset + 10 >= len(risk_df)
+        next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
+        if next_clicked:
+            st.session_state.user_offset += 10
+            st.rerun()
 
     # Inline loader feedback for pagination actions
     loader_placeholder = st.empty()
