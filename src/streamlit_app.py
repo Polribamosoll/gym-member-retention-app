@@ -561,10 +561,16 @@ def main_app():
     # Predict Churn Risk (moved up to be available for Data Overview and other sections)
     risk_df = predict_churn_risk(model, features_df, active_only=True)
 
-    # Page selector
-    page = st.radio("View", ["Retention Overview", "Behavior & Segmentation"], horizontal=True)
+    # Page selector (translated)
+    page_options = {
+        translate("page_retention_overview", default="Retention Overview"): "retention",
+        translate("page_behavior_segmentation", default="Behavior & Segmentation"): "behavior",
+    }
+    page_label = translate("view_selector", default="View")
+    page_choice = st.radio(page_label, list(page_options.keys()), horizontal=True)
+    page = page_options[page_choice]
 
-    if page == "Retention Overview":
+    if page == "retention":
         # 1. Data Overview
         st.subheader(_("data_overview"))
         total_users = len(users_df)
@@ -743,7 +749,7 @@ def main_app():
             risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
             export_buffer.seek(0)
             st.download_button(
-                label="Download Excel",
+                label=translate("download_excel", default="Download Excel"),
                 data=export_buffer,
                 file_name="at_risk_users.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -851,7 +857,7 @@ def main_app():
             x - width/2,
             comparison_df['Churned'],
             width,
-            label='Churned Users',
+            label=translate("churned_users_label", default="Churned Users"),
             color='#FF7F7F',
             alpha=0.9,
             edgecolor="#0f0f0f",
@@ -861,7 +867,7 @@ def main_app():
             x + width/2,
             comparison_df['Active'],
             width,
-            label='Active Users',
+            label=translate("active_users_label", default="Active Users"),
             color='#4ade80',
             alpha=0.9,
             edgecolor="#0f0f0f",
@@ -869,7 +875,7 @@ def main_app():
         )
 
         ax.set_xlabel('', fontsize=12, fontweight='bold', color="#e5e7eb")
-        ax.set_ylabel('Average Value', fontsize=12, fontweight='bold', color="#e5e7eb", labelpad=8)
+        ax.set_ylabel(translate("average_value_label", default="Average Value"), fontsize=12, fontweight='bold', color="#e5e7eb", labelpad=8)
         ax.set_title('', fontsize=14, fontweight='bold', pad=20, color="#e5e7eb")
         ax.set_xticks(x)
         ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10, color="#e5e7eb")
@@ -903,11 +909,11 @@ def main_app():
 
     def render_behavior_page():
         # Group Segmentation
-        st.subheader("Group Segmentation")
+        st.subheader(translate("group_segmentation", default="Group Segmentation"))
 
         def plot_churn_rate(df, group_col, title, color_map=None, category_order=None, y_label=""):
             if df.empty or group_col not in df.columns:
-                st.info(f"No data available for {title}.")
+                st.info(translate("no_data_available_for", default=f"No data available for {title}.", title=title))
                 return
             grouped = (
                 df.groupby(group_col)['CHURNED']
@@ -959,7 +965,7 @@ def main_app():
 
         gender_map = {"F": "#60a5fa", "M": "#4ade80"}
         seg_df['GENDER_LABEL'] = seg_df['GENDER'].map({"F": "Female", "M": "Male"}).fillna(seg_df['GENDER'])
-        plot_churn_rate(seg_df, 'GENDER_LABEL', "Churn rate by gender", color_map={"Female": "#60a5fa", "Male": "#4ade80"})
+        plot_churn_rate(seg_df, 'GENDER_LABEL', translate("churn_rate_by_gender", default="Churn rate by gender"), color_map={"Female": "#60a5fa", "Male": "#4ade80"})
 
         class_cols = [c for c in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING'] if c in seg_df.columns]
         if class_cols:
@@ -975,10 +981,10 @@ def main_app():
             plot_churn_rate(
                 seg_df,
                 'CLASSES_BIN',
-                "Churn rate by number of enrolled classes",
+                translate("churn_rate_by_classes", default="Churn rate by number of enrolled classes"),
                 category_order=["0-1", "2-3", "4+"],
                 color_map=classes_map,
-                y_label="Enrolled classes",
+                y_label=translate("enrolled_classes_label", default="Enrolled classes"),
             )
 
         today_ts = pd.Timestamp.today().normalize()
@@ -996,10 +1002,10 @@ def main_app():
         plot_churn_rate(
             seg_df,
             'TENURE_BIN',
-            "Churn rate by tenure",
+            translate("churn_rate_by_tenure", default="Churn rate by tenure"),
             category_order=["0-1", "1-3", "3-6", "6+"],
             color_map=tenure_map,
-            y_label="Time since registration",
+            y_label=translate("time_since_registration_label", default="Time since registration"),
         )
 
         age_bins = [0, 25, 35, 50, 120]
@@ -1009,14 +1015,14 @@ def main_app():
         plot_churn_rate(
             seg_df,
             'AGE_BIN',
-            "Churn rate by age",
+            translate("churn_rate_by_age", default="Churn rate by age"),
             category_order=age_labels,
             color_map=age_map,
-            y_label="Age",
+            y_label=translate("age_label", default="Age"),
         )
 
         # Users evolution (last 12 months)
-        st.subheader("Users evolution")
+        st.subheader(translate("users_evolution_title", default="Users evolution"))
         today = pd.Timestamp.today().normalize()
         start_month = (today - pd.DateOffset(months=11)).replace(day=1)
         months_range = pd.date_range(start_month, today, freq='MS')
@@ -1064,7 +1070,7 @@ def main_app():
         )
         fig_evo.update_layout(
             xaxis_title="",
-            yaxis_title="Users",
+            yaxis_title=translate("total_users", default="Users"),
             xaxis_tickangle=-45,
             bargap=0.15,
             bargroupgap=0.1,
@@ -1187,7 +1193,7 @@ def main_app():
             )
             st.plotly_chart(fig_ts, use_container_width=True)
         else:
-            st.info("No visits in the last 2 months to display.")
+            st.info(translate("no_visits_last_two_months", default="No visits in the last 2 months to display."))
 
         # Churned compared to time since registration
         st.subheader(translate("churn_vs_time_section", default="Churned compared to time since registration"))
@@ -1254,7 +1260,7 @@ def main_app():
         st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
         render_footer()
 
-    if page == "Behavior & Segmentation":
+    if page == "behavior":
         render_behavior_page()
         return
 
