@@ -29,10 +29,13 @@ if "loading_states" not in st.session_state:
     st.session_state["loading_states"] = {}
 
 # Translation helper function that can be called from anywhere
-def translate(key, **kwargs):
-    """Translate a key using the current session language"""
+def translate(key, default=None, **kwargs):
+    """Translate a key using the current session language with optional fallback."""
     current_lang = st.session_state.get("lang", "en")
-    return get_translation(current_lang, key, **kwargs)
+    text = get_translation(current_lang, key, **kwargs)
+    if text.startswith("MISSING_TRANSLATION[") and default is not None:
+        return default
+    return text
 
 # Generic loading state helpers
 def set_loading(key: str, value: bool) -> None:
@@ -1045,6 +1048,50 @@ def main_app():
         st.plotly_chart(fig_ts, use_container_width=True)
     else:
         st.info("No visits in the last 2 months to display.")
+
+    # Churned compared to time since registration
+    st.subheader(translate("churn_vs_time_section", default="Churned compared to time since registration"))
+    if users_df.empty or 'REGISTRATION_DATE' not in users_df.columns:
+        st.info(translate("no_data_churn_vs_time", default="No data available to plot churn vs time since registration."))
+    else:
+        churn_curve_df = users_df.copy()
+        if 'CHURNED' not in churn_curve_df.columns:
+            churn_curve_df['CHURNED'] = churn_curve_df['MEMBERSHIP_END_DATE'].notna().astype(int)
+        else:
+            churn_curve_df['CHURNED'] = churn_curve_df['CHURNED'].astype(int)
+
+        today_ts = pd.Timestamp.today().normalize()
+        churn_curve_df['TENURE_MONTH'] = ((today_ts - churn_curve_df['REGISTRATION_DATE']).dt.days / 30.4).clip(lower=0)
+        churn_curve_df['TENURE_MONTH'] = churn_curve_df['TENURE_MONTH'].round().astype(int)
+        max_month = int(churn_curve_df['TENURE_MONTH'].max()) if not churn_curve_df.empty else 0
+        month_index = pd.Index(range(0, max_month + 1))
+
+        churn_curve = (
+            churn_curve_df.groupby('TENURE_MONTH')['CHURNED']
+            .mean()
+            .mul(100)
+            .reindex(month_index)
+            .reset_index()
+        )
+        churn_curve.columns = ["Months since registration", "Churn Rate (%)"]
+
+        fig_curve = px.line(
+            churn_curve,
+            x="Months since registration",
+            y="Churn Rate (%)",
+            markers=True,
+            labels={
+                "Months since registration": translate("time_since_registration_axis", default="Time since registration (months)"),
+                "Churn Rate (%)": translate("churn_rate_axis", default="Churn rate (%)"),
+            },
+        )
+        fig_curve.update_traces(line_color="#4ade80", marker_color="#4ade80")
+        fig_curve.update_layout(
+            xaxis_title=translate("time_since_registration_axis", default="Time since registration (months)"),
+            yaxis_title=translate("churn_rate_axis", default="Churn rate (%)"),
+            hovermode="x unified",
+        )
+        st.plotly_chart(fig_curve, use_container_width=True)
 
     # Group Segmentation
     st.subheader("Group Segmentation")
