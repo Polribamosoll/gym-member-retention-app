@@ -966,13 +966,24 @@ def main_app():
             "Churned": "#f472b6",
         },
     )
-    fig_evo.update_traces(marker_line_width=0, hovertemplate="%{x}: %{y}")
+    fig_evo.update_traces(
+        marker_line_width=0.5,
+        marker_line_color="#0f0f0f",
+        hovertemplate="%{x}: %{y}",
+        texttemplate="%{y}",
+        textposition="outside",
+        cliponaxis=False,
+    )
     fig_evo.update_layout(
         xaxis_title="",
         yaxis_title="Users",
         xaxis_tickangle=-45,
         bargap=0.15,
         bargroupgap=0.1,
+        plot_bgcolor="#0a0a0a",
+        paper_bgcolor="#0a0a0a",
+        xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+        yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
     )
     st.plotly_chart(fig_evo, use_container_width=True)
 
@@ -1047,8 +1058,24 @@ def main_app():
             color='color',
             color_discrete_map="identity",
         )
-        fig_ts.update_layout(xaxis_title="", yaxis_title="Entries", xaxis_tickangle=-45)
-        fig_ts.update_traces(showlegend=False)
+        fig_ts.update_traces(
+            showlegend=False,
+            marker_line_width=0.5,
+            marker_line_color="#0f0f0f",
+            hovertemplate="%{x|%Y-%m-%d}: %{y}",
+            texttemplate="%{y}",
+            textposition="outside",
+            cliponaxis=False,
+        )
+        fig_ts.update_layout(
+            xaxis_title="",
+            yaxis_title="Entries",
+            xaxis_tickangle=-45,
+            plot_bgcolor="#0a0a0a",
+            paper_bgcolor="#0a0a0a",
+            xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+            yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+        )
         st.plotly_chart(fig_ts, use_container_width=True)
     else:
         st.info("No visits in the last 2 months to display.")
