@@ -698,25 +698,6 @@ def main_app():
         'risk_level': 'Risk Level' 
     }
     
-    # Buttons for pagination with reusable loading indicators
-    col_buttons1, col_buttons2 = st.columns([1, 1])
-
-    with col_buttons1:
-        if st.session_state.user_offset > 0:
-            back_clicked = st.button(_("back_to_first_10"))
-            if back_clicked:
-                st.session_state.user_offset = 0
-                st.session_state["table_loading"] = True
-                st.rerun()
-
-    with col_buttons2:
-        next_disabled = st.session_state.user_offset + 10 >= len(risk_df)
-        next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
-        if next_clicked:
-            st.session_state.user_offset += 10
-            st.session_state["table_loading"] = True
-            st.rerun()
-
     # Inline loader feedback for pagination actions
     loader_placeholder = st.empty()
     if st.session_state.get("table_loading"):
@@ -748,17 +729,36 @@ def main_app():
 
     st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
 
-    # Download full list (all at-risk users) below the table
-    export_buffer = io.BytesIO()
-    risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
-    export_buffer.seek(0)
-    st.download_button(
-        label="Download Excel",
-        data=export_buffer,
-        file_name="at_risk_users.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        type="primary",
-    )
+    # Controls row: back button (left), spacer, download + next (right-aligned)
+    col_back, col_spacer, col_download, col_next = st.columns([1, 2, 1, 1])
+
+    with col_back:
+        if st.session_state.user_offset > 0:
+            back_clicked = st.button(_("back_to_first_10"))
+            if back_clicked:
+                st.session_state.user_offset = 0
+                st.session_state["table_loading"] = True
+                st.rerun()
+
+    with col_download:
+        export_buffer = io.BytesIO()
+        risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
+        export_buffer.seek(0)
+        st.download_button(
+            label="Download Excel",
+            data=export_buffer,
+            file_name="at_risk_users.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+        )
+
+    with col_next:
+        next_disabled = st.session_state.user_offset + 10 >= len(risk_df)
+        next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
+        if next_clicked:
+            st.session_state.user_offset += 10
+            st.session_state["table_loading"] = True
+            st.rerun()
 
     # 4. Feature Importance
     st.subheader(_("feature_importance"))
