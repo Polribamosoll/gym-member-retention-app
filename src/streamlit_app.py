@@ -937,19 +937,28 @@ def main_app():
         )
 
     evolution_df = pd.DataFrame(evolution_rows)
+    st.markdown("#### Users evolution (last 12 months)")
     fig_evo = px.bar(
         evolution_df,
-        x="Month",
-        y=["Active", "New", "Churned"],
+        y="Month",
+        x=["Active", "New", "Churned"],
         barmode="group",
         title="",
+        orientation="h",
         color_discrete_map={
             "Active": "#4ade80",
             "New": "#60a5fa",
             "Churned": "#f472b6",
         },
     )
-    fig_evo.update_layout(xaxis_title="", yaxis_title="Users", xaxis_tickangle=-45)
+    fig_evo.update_traces(marker_line_width=0, hovertemplate="%{y}: %{x}")
+    fig_evo.update_layout(
+        xaxis_title="Users",
+        yaxis_title="",
+        yaxis_categoryorder='category ascending',
+        bargap=0.15,
+        bargroupgap=0.1,
+    )
     st.plotly_chart(fig_evo, use_container_width=True)
 
     # Activity heatmap and time series (open hours buckets, last 2 months)
@@ -1024,6 +1033,109 @@ def main_app():
         st.plotly_chart(fig_ts, use_container_width=True)
     else:
         st.info("No visits in the last 2 months to display.")
+
+    # Group Segmentation
+    st.subheader("Group Segmentation")
+
+    def plot_churn_rate(df, group_col, title, color_map=None, category_order=None):
+        if df.empty or group_col not in df.columns:
+            st.info(f"No data available for {title}.")
+            return
+        grouped = (
+            df.groupby(group_col)['CHURNED']
+            .mean()
+            .mul(100)
+            .reset_index()
+            .rename(columns={'CHURNED': 'Churn Rate (%)'})
+        )
+        fig = px.bar(
+            grouped,
+            y=group_col,
+            x='Churn Rate (%)',
+            color=group_col if color_map else None,
+            color_discrete_map=color_map if color_map else None,
+            category_orders={group_col: category_order} if category_order else None,
+            orientation="h",
+        )
+        fig.update_traces(marker_line_width=0, hovertemplate="%{y}: %{x:.1f}%")
+        fig.update_layout(
+            xaxis_title="Churn Rate (%)",
+            yaxis_title="",
+            bargap=0.2,
+            bargroupgap=0.15,
+            showlegend=False,
+            yaxis_categoryorder='array' if category_order else None,
+            yaxis_categoryarray=category_order if category_order else None,
+        )
+        if not color_map:
+            fig.update_traces(marker_color="#4ade80")
+        st.markdown(f"**{title}**")
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Base dataframe for churn segmentation
+    seg_df = users_df.copy()
+    if 'CHURNED' not in seg_df.columns:
+        seg_df['CHURNED'] = seg_df['MEMBERSHIP_END_DATE'].notna().astype(int)
+    else:
+        seg_df['CHURNED'] = seg_df['CHURNED'].astype(int)
+
+    # Churn rate by gender
+    gender_map = {"F": "#60a5fa", "M": "#4ade80"}
+    plot_churn_rate(seg_df, 'GENDER', "Churn rate by gender", color_map=gender_map)
+
+    # Churn rate by number of enrolled classes (0–1, 2–3, 4+)
+    class_cols = [c for c in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING'] if c in seg_df.columns]
+    if class_cols:
+        seg_df['NUM_CLASSES'] = seg_df[class_cols].sum(axis=1)
+        def classes_bin(n):
+            if n <= 1:
+                return "0-1"
+            elif n <= 3:
+                return "2-3"
+            return "4+"
+        seg_df['CLASSES_BIN'] = seg_df['NUM_CLASSES'].apply(classes_bin)
+        classes_map = {"0-1": "#4ade80", "2-3": "#60a5fa", "4+": "#f472b6"}
+        plot_churn_rate(
+            seg_df,
+            'CLASSES_BIN',
+            "Churn rate by number of enrolled classes",
+            category_order=["0-1", "2-3", "4+"],
+            color_map=classes_map,
+        )
+
+    # Churn rate by tenure buckets (0–1, 1–3, 3–6, 6+ months)
+    today_ts = pd.Timestamp.today().normalize()
+    seg_df['TENURE_MONTHS'] = (today_ts - seg_df['REGISTRATION_DATE']).dt.days / 30.4
+    def tenure_bin(m):
+        if m <= 1:
+            return "0-1"
+        elif m <= 3:
+            return "1-3"
+        elif m <= 6:
+            return "3-6"
+        return "6+"
+    seg_df['TENURE_BIN'] = seg_df['TENURE_MONTHS'].apply(tenure_bin)
+    tenure_map = {"0-1": "#4ade80", "1-3": "#60a5fa", "3-6": "#f59e0b", "6+": "#f472b6"}
+    plot_churn_rate(
+        seg_df,
+        'TENURE_BIN',
+        "Churn rate by tenure",
+        category_order=["0-1", "1-3", "3-6", "6+"],
+        color_map=tenure_map,
+    )
+
+    # Churn rate by age bins
+    age_bins = [0, 25, 35, 50, 120]
+    age_labels = ["0-25", "25-35", "35-50", "50+"]
+    seg_df['AGE_BIN'] = pd.cut(seg_df['AGE'], bins=age_bins, labels=age_labels, right=False)
+    age_map = {"0-25": "#4ade80", "25-35": "#60a5fa", "35-50": "#f59e0b", "50+": "#f472b6"}
+    plot_churn_rate(
+        seg_df,
+        'AGE_BIN',
+        "Churn rate by age",
+        category_order=age_labels,
+        color_map=age_map,
+    )
 
     # Footer spacing and render
     st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
