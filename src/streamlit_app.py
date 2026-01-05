@@ -805,18 +805,38 @@ def main_app():
     # Apply readable labels
     importance_df['feature_label'] = importance_df['feature'].map(feature_labels).fillna(importance_df['feature'])
 
-    # Create the feature importance plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    # Create the feature importance plot (polished styling)
+    fig, ax = plt.subplots(figsize=(12, 10), facecolor="#0a0a0a")
+    ax.set_facecolor("#0a0a0a")
     importance_sorted = importance_df.sort_values('importance', ascending=True)
-    bars = ax.barh(importance_sorted['feature_label'], importance_sorted['importance'], color='#4ade80')
-    ax.set_xlabel('Importance Score', fontsize=12)
-    ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold')
+    bars = ax.barh(
+        importance_sorted['feature_label'],
+        importance_sorted['importance'],
+        color='#4ade80',
+        edgecolor="#0f0f0f",
+        linewidth=1.0,
+        alpha=0.92,
+    )
+    ax.set_xlabel('Importance Score', fontsize=12, color="#e5e7eb", labelpad=8)
+    ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold', color="#e5e7eb", pad=12)
+    ax.tick_params(colors="#e5e7eb", labelsize=11)
+    ax.xaxis.grid(True, color="#2a2a2a", alpha=0.6)
+    ax.yaxis.grid(False)
+    for spine in ax.spines.values():
+        spine.set_color("#2a2a2a")
 
     # Add value labels on the bars
     for bar in bars:
         width = bar.get_width()
-        ax.text(width + 0.001, bar.get_y() + bar.get_height()/2,
-                f'{width:.3f}', ha='left', va='center', fontsize=10)
+        ax.text(
+            width + (0.002 if width >= 0 else -0.002),
+            bar.get_y() + bar.get_height()/2,
+            f'{width:.3f}',
+            ha='left' if width >= 0 else 'right',
+            va='center',
+            fontsize=10,
+            color="#e5e7eb",
+        )
 
     plt.tight_layout()
     st.pyplot(fig)
