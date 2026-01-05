@@ -561,739 +561,702 @@ def main_app():
     # Predict Churn Risk (moved up to be available for Data Overview and other sections)
     risk_df = predict_churn_risk(model, features_df, active_only=True)
 
-    # 1. Data Overview
-    st.subheader(_("data_overview"))
-    total_users = len(users_df)
-    total_visits = len(visits_df)
-    churned_users = users_df['MEMBERSHIP_END_DATE'].notna().sum()
-    active_users = users_df['MEMBERSHIP_END_DATE'].isna().sum()
-    churn_rate = (churned_users / total_users) * 100 if total_users > 0 else 0
+    # Page selector
+    page = st.radio("View", ["Retention Overview", "Behavior & Segmentation"], horizontal=True)
 
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    with col1:
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_users}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_visits')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_visits}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('active_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{active_users}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col4:
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churned_users')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{churned_users}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col5:
-        # Calculate users at high or medium risk
-        users_at_risk_count = risk_df[(risk_df['risk_level'] == 'High') | (risk_df['risk_level'] == 'Medium')].shape[0]
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{users_at_risk_count}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col6:
-        st.markdown(f"""
-        <div>
-            <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
-            <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{churn_rate:.2f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+    if page == "Retention Overview":
+        # 1. Data Overview
+        st.subheader(_("data_overview"))
+        total_users = len(users_df)
+        total_visits = len(visits_df)
+        churned_users = users_df['MEMBERSHIP_END_DATE'].notna().sum()
+        active_users = users_df['MEMBERSHIP_END_DATE'].isna().sum()
+        churn_rate = (churned_users / total_users) * 100 if total_users > 0 else 0
 
-    st.write("") # Add an empty line for separation
-    st.write("") # Add another empty line for separation
-
-    # 2. At-Risk Active Users (Donut Plot)
-    st.subheader(_("at_risk_active_users"))
-    risk_df = predict_churn_risk(model, features_df, active_only=True)
-
-
-    # Convert value_counts to DataFrame for styling
-    risk_distribution = risk_df['risk_level'].value_counts().reset_index()
-    risk_distribution.columns = ['Risk Level', 'Count']
-
-    def highlight_risk_distribution(row):
-        if row['Risk Level'] == 'High':
-            return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row['Risk Level'] == 'Medium':
-            return ['background-color: #FFEEDD'] * len(row)  # Soft orange
-        else:  # Low
-            return ['background-color: #DDFFDD'] * len(row)  # Soft green
-
-    # Create color mapping matching app theme
-    color_map = {
-        'High': '#FF7F7F',  # Light red (matching risk indicators)
-        'Medium': '#FFA500',  # Orange (warning)
-        'Low': '#4ade80'  # App green (healthy)
-    }
-
-    # Create bar chart
-    fig = px.pie(
-        risk_distribution,
-        names='Risk Level',
-        values='Count',
-        color='Risk Level',
-        color_discrete_map=color_map,
-        title=None, # Remove title as it's already in the app
-        hole=0.5  # Create the donut shape
-    )
-
-    # Update layout for donut chart with professional styling
-    fig.update_layout(
-        showlegend=True,
-        legend_title=None,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="center",
-            x=0.5,
-            font=dict(color="#e5e7eb")
-        ),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide',
-        plot_bgcolor="#0a0a0a",
-        paper_bgcolor="#0a0a0a",
-        font=dict(color="#e5e7eb"),
-        margin=dict(t=0, b=0, l=0, r=0),
-    )
-
-    # Update text, hover info, and add subtle outlines
-    fig.update_traces(
-        textposition='inside',
-        textinfo='percent+label',
-        hovertemplate="%{label}: %{percent:.1%} (%{value})",
-        marker_line_color="#0f0f0f",
-        marker_line_width=1.2,
-    )
-
-    st.plotly_chart(fig)
-    
-    # 3. Top 10 At-Risk Users (Table with buttons)
-    st.subheader(_("top_10_at_risk_users"))
-
-    # Calculate the number of high-risk users
-    num_high_risk_users = len(risk_df[risk_df['risk_level'] == 'High'])
-    st.write(_("high_risk_users_message", n=num_high_risk_users))
-
-
-    # Initialize session state for user_offset and loading flag if not already set
-    if 'user_offset' not in st.session_state:
-        st.session_state.user_offset = 0
-    if 'table_loading' not in st.session_state:
-        st.session_state["table_loading"] = False
-
-    # Define a mapping for more readable column names
-    column_name_mapping = {
-        'CUSTOMER_ID': 'Customer ID',
-        'AGE': 'Age',
-        'GENDER': 'Gender',
-        'MEMBERSHIP_TYPE': 'Membership Type',
-        'MONTHLY_PRICE': 'Monthly Price',
-        'CONTRACT_LENGTH': 'Contract Length',
-        'REGISTRATION_DATE': 'Registration Date',
-        'CHURNED': 'Churned',
-        'visits_per_month': 'Visits per Month',
-        'days_since_last_visit': 'Days Since Last Visit',
-        'avg_session_duration_min': 'Avg Session Duration (min)',
-        'visit_frequency_trend': 'Visit Frequency Trend',
-        'num_classes_enrolled': 'Num Classes Enrolled',
-        'churn_risk_score': 'Churn Risk Score',
-        'risk_level': 'Risk Level' 
-    }
-    
-    # Inline loader feedback for pagination actions
-    loader_placeholder = st.empty()
-    if st.session_state.get("table_loading"):
-        with loader_placeholder.container():
-            st.markdown("""
-            <div style='text-align: center; padding: 16px; background-color: #1a1a1a; border-radius: 10px; margin: 6px 0;'>
-                <h4 style='color: #4ade80; margin-bottom: 8px;'>🔄 Loading users...</h4>
-                <div style='color: #ffffff;'>Please wait a moment.</div>
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
+        with col1:
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_users')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_users}</div>
             </div>
             """, unsafe_allow_html=True)
-            with st.spinner(translate("loading_users_message", default="Loading users...")):
-                import time
-                time.sleep(0.5)
-        # Clear loader once data is ready to render
-        loader_placeholder.empty()
-        st.session_state["table_loading"] = False
+        with col2:
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('total_visits')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{total_visits}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('active_users')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{active_users}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col4:
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churned_users')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; color: #ffffff; line-height: 1;'>{churned_users}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col5:
+            users_at_risk_count = risk_df[(risk_df['risk_level'] == 'High') | (risk_df['risk_level'] == 'Medium')].shape[0]
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('users_at_risk')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{users_at_risk_count}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col6:
+            st.markdown(f"""
+            <div>
+                <div style='font-size: 0.875rem; color: #ffffff; margin-bottom: 0.25rem;'>{_('churn_rate')}</div>
+                <div style='font-size: 1.8rem; font-weight: 600; line-height: 1;' class='metric-light-red'>{churn_rate:.2f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # Get the current slice of users
-    current_users_df = risk_df.iloc[st.session_state.user_offset : st.session_state.user_offset + 10]
+        st.write("")
+        st.write("")
 
-    # Rename columns and display with no index
-    def highlight_risk(row):
-        if row['Risk Level'] == 'High':
-            return ['background-color: #FFDDDD'] * len(row)  # Soft red
-        elif row['Risk Level'] == 'Medium':
-            return ['background-color: #FFEEDD'] * len(row)  # Soft orange
-        else:
-            return [''] * len(row)
+        # 2. At-Risk Active Users (Donut Plot)
+        st.subheader(_("at_risk_active_users"))
 
-    st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
+        risk_distribution = risk_df['risk_level'].value_counts().reset_index()
+        risk_distribution.columns = ['Risk Level', 'Count']
 
-    # Controls row: back button (left), spacer, download + next (right-aligned)
-    col_back, col_spacer, col_download, col_next = st.columns([1, 2, 1, 1])
+        color_map = {
+            'High': '#FF7F7F',
+            'Medium': '#FFA500',
+            'Low': '#4ade80'
+        }
 
-    with col_back:
-        if st.session_state.user_offset > 0:
-            back_clicked = st.button(_("back_to_first_10"))
-            if back_clicked:
-                st.session_state.user_offset = 0
+        fig = px.pie(
+            risk_distribution,
+            names='Risk Level',
+            values='Count',
+            color='Risk Level',
+            color_discrete_map=color_map,
+            title=None,
+            hole=0.5
+        )
+
+        fig.update_layout(
+            showlegend=True,
+            legend_title=None,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5,
+                font=dict(color="#e5e7eb")
+            ),
+            uniformtext_minsize=12,
+            uniformtext_mode='hide',
+            plot_bgcolor="#0a0a0a",
+            paper_bgcolor="#0a0a0a",
+            font=dict(color="#e5e7eb"),
+            margin=dict(t=0, b=0, l=0, r=0),
+        )
+
+        fig.update_traces(
+            textposition='inside',
+            textinfo='percent+label',
+            hovertemplate="%{label}: %{percent:.1%} (%{value})",
+            marker_line_color="#0f0f0f",
+            marker_line_width=1.2,
+        )
+
+        st.plotly_chart(fig)
+        
+        # 3. Top 10 At-Risk Users (Table with buttons)
+        st.subheader(_("top_10_at_risk_users"))
+
+        num_high_risk_users = len(risk_df[risk_df['risk_level'] == 'High'])
+        st.write(_("high_risk_users_message", n=num_high_risk_users))
+
+        if 'user_offset' not in st.session_state:
+            st.session_state.user_offset = 0
+        if 'table_loading' not in st.session_state:
+            st.session_state["table_loading"] = False
+
+        column_name_mapping = {
+            'CUSTOMER_ID': 'Customer ID',
+            'AGE': 'Age',
+            'GENDER': 'Gender',
+            'MEMBERSHIP_TYPE': 'Membership Type',
+            'MONTHLY_PRICE': 'Monthly Price',
+            'CONTRACT_LENGTH': 'Contract Length',
+            'REGISTRATION_DATE': 'Registration Date',
+            'CHURNED': 'Churned',
+            'visits_per_month': 'Visits per Month',
+            'days_since_last_visit': 'Days Since Last Visit',
+            'avg_session_duration_min': 'Avg Session Duration (min)',
+            'visit_frequency_trend': 'Visit Frequency Trend',
+            'num_classes_enrolled': 'Num Classes Enrolled',
+            'churn_risk_score': 'Churn Risk Score',
+            'risk_level': 'Risk Level' 
+        }
+        
+        loader_placeholder = st.empty()
+        if st.session_state.get("table_loading"):
+            with loader_placeholder.container():
+                st.markdown("""
+                <div style='text-align: center; padding: 16px; background-color: #1a1a1a; border-radius: 10px; margin: 6px 0;'>
+                    <h4 style='color: #4ade80; margin-bottom: 8px;'>🔄 Loading users...</h4>
+                    <div style='color: #ffffff;'>Please wait a moment.</div>
+                </div>
+                """, unsafe_allow_html=True)
+                with st.spinner(translate("loading_users_message", default="Loading users...")):
+                    import time
+                    time.sleep(0.5)
+            loader_placeholder.empty()
+            st.session_state["table_loading"] = False
+
+        current_users_df = risk_df.iloc[st.session_state.user_offset : st.session_state.user_offset + 10]
+
+        def highlight_risk(row):
+            if row['Risk Level'] == 'High':
+                return ['background-color: #FFDDDD'] * len(row)
+            elif row['Risk Level'] == 'Medium':
+                return ['background-color: #FFEEDD'] * len(row)
+            else:
+                return [''] * len(row)
+
+        st.dataframe(current_users_df.rename(columns=column_name_mapping).style.apply(highlight_risk, axis=1), hide_index=True)
+
+        col_back, col_spacer, col_download, col_next = st.columns([1, 2, 1, 1])
+
+        with col_back:
+            if st.session_state.user_offset > 0:
+                back_clicked = st.button(_("back_to_first_10"))
+                if back_clicked:
+                    st.session_state.user_offset = 0
+                    st.session_state["table_loading"] = True
+                    st.rerun()
+
+        with col_download:
+            export_buffer = io.BytesIO()
+            risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
+            export_buffer.seek(0)
+            st.download_button(
+                label="Download Excel",
+                data=export_buffer,
+                file_name="at_risk_users.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary",
+            )
+
+        with col_next:
+            next_disabled = st.session_state.user_offset + 10 >= len(risk_df)
+            next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
+            if next_clicked:
+                st.session_state.user_offset += 10
                 st.session_state["table_loading"] = True
                 st.rerun()
 
-    with col_download:
-        export_buffer = io.BytesIO()
-        risk_df.rename(columns=column_name_mapping).to_excel(export_buffer, index=False)
-        export_buffer.seek(0)
-        st.download_button(
-            label="Download Excel",
-            data=export_buffer,
-            file_name="at_risk_users.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
+        # 4. Feature Importance
+        st.subheader(_("feature_importance"))
+        importance_df = get_feature_importance(model)
+
+        feature_labels = {
+            'total_visits': 'Total Visits',
+            'visits_per_month': 'Visits per Month',
+            'avg_session_duration_min': 'Average Session Duration (min)',
+            'days_since_last_visit': 'Days Since Last Visit',
+            'avg_days_between_visits': 'Average Days Between Visits',
+            'std_days_between_visits': 'Standard Deviation Days Between Visits',
+            'visits_last_30_days': 'Visits in Last 30 Days',
+            'visits_last_60_days': 'Visits in Last 60 Days',
+            'visits_last_90_days': 'Visits in Last 90 Days',
+            'pct_peak_hour_visits': 'Percentage Peak Hour Visits',
+            'pct_weekend_visits': 'Percentage Weekend Visits',
+            'visit_frequency_trend': 'Visit Frequency Trend',
+            'membership_duration_months': 'Membership Duration (months)',
+            'AGE': 'Age',
+            'GENDER': 'Gender'
+        }
+
+        importance_df['feature_label'] = importance_df['feature'].map(feature_labels).fillna(importance_df['feature'])
+
+        fig, ax = plt.subplots(figsize=(12, 10), facecolor="#0a0a0a")
+        ax.set_facecolor("#0a0a0a")
+        importance_sorted = importance_df.sort_values('importance', ascending=True)
+        bars = ax.barh(
+            importance_sorted['feature_label'],
+            importance_sorted['importance'],
+            color='#4ade80',
+            edgecolor="#0f0f0f",
+            linewidth=1.0,
+            alpha=0.92,
         )
+        ax.set_xlabel('Importance Score', fontsize=12, color="#e5e7eb", labelpad=8)
+        ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold', color="#e5e7eb", pad=12)
+        ax.tick_params(colors="#e5e7eb", labelsize=11)
+        ax.xaxis.grid(True, color="#2a2a2a", alpha=0.6)
+        ax.yaxis.grid(False)
+        for spine in ax.spines.values():
+            spine.set_color("#2a2a2a")
 
-    with col_next:
-        next_disabled = st.session_state.user_offset + 10 >= len(risk_df)
-        next_clicked = st.button(_("load_next_10_at_risk_users"), disabled=next_disabled)
-        if next_clicked:
-            st.session_state.user_offset += 10
-            st.session_state["table_loading"] = True
-            st.rerun()
-
-    # 4. Feature Importance
-    st.subheader(_("feature_importance"))
-    importance_df = get_feature_importance(model)
-
-    # Create readable labels for features
-    feature_labels = {
-        'total_visits': 'Total Visits',
-        'visits_per_month': 'Visits per Month',
-        'avg_session_duration_min': 'Average Session Duration (min)',
-        'days_since_last_visit': 'Days Since Last Visit',
-        'avg_days_between_visits': 'Average Days Between Visits',
-        'std_days_between_visits': 'Standard Deviation Days Between Visits',
-        'visits_last_30_days': 'Visits in Last 30 Days',
-        'visits_last_60_days': 'Visits in Last 60 Days',
-        'visits_last_90_days': 'Visits in Last 90 Days',
-        'pct_peak_hour_visits': 'Percentage Peak Hour Visits',
-        'pct_weekend_visits': 'Percentage Weekend Visits',
-        'visit_frequency_trend': 'Visit Frequency Trend',
-        'membership_duration_months': 'Membership Duration (months)',
-        'AGE': 'Age',
-        'GENDER': 'Gender'
-    }
-
-    # Apply readable labels
-    importance_df['feature_label'] = importance_df['feature'].map(feature_labels).fillna(importance_df['feature'])
-
-    # Create the feature importance plot (polished styling)
-    fig, ax = plt.subplots(figsize=(12, 10), facecolor="#0a0a0a")
-    ax.set_facecolor("#0a0a0a")
-    importance_sorted = importance_df.sort_values('importance', ascending=True)
-    bars = ax.barh(
-        importance_sorted['feature_label'],
-        importance_sorted['importance'],
-        color='#4ade80',
-        edgecolor="#0f0f0f",
-        linewidth=1.0,
-        alpha=0.92,
-    )
-    ax.set_xlabel('Importance Score', fontsize=12, color="#e5e7eb", labelpad=8)
-    ax.set_title('Feature Importance for Churn Prediction', fontsize=14, fontweight='bold', color="#e5e7eb", pad=12)
-    ax.tick_params(colors="#e5e7eb", labelsize=11)
-    ax.xaxis.grid(True, color="#2a2a2a", alpha=0.6)
-    ax.yaxis.grid(False)
-    for spine in ax.spines.values():
-        spine.set_color("#2a2a2a")
-
-    # Add value labels on the bars
-    for bar in bars:
-        width = bar.get_width()
-        ax.text(
-            width + (0.002 if width >= 0 else -0.002),
-            bar.get_y() + bar.get_height()/2,
-            f'{width:.3f}',
-            ha='left' if width >= 0 else 'right',
-            va='center',
-            fontsize=10,
-            color="#e5e7eb",
-        )
-
-    plt.tight_layout()
-    st.pyplot(fig)
-
-    # 5. Churned vs Active Users Comparison
-    st.subheader(_("churned_vs_active_users_comparison"))
-
-    # Select data
-    churned = features_df[features_df['CHURNED'] == 1]
-    active = features_df[features_df['CHURNED'] == 0]
-
-    # Define features to compare with readable labels
-    feature_comparisons = {
-        'visits_per_month': 'Visits per Month',
-        'days_since_last_visit': 'Days Since Last Visit',
-        'avg_session_duration_min': 'Avg Session Duration (min)',
-        'visit_frequency_trend': 'Visit Frequency Trend',
-        'num_classes_enrolled': 'Classes Enrolled'
-    }
-
-    # Create comparison data for visualization
-    comparison_data = []
-    for feature_key, feature_name in feature_comparisons.items():
-        comparison_data.append({
-            'Feature': feature_name,
-            'Churned': churned[feature_key].mean(),
-            'Active': active[feature_key].mean(),
-            'Feature_Key': feature_key
-        })
-
-    comparison_df = pd.DataFrame(comparison_data)
-
-    # Create grouped bar chart (polished styling)
-    fig, ax = plt.subplots(figsize=(14, 8), facecolor="#0a0a0a")
-    ax.set_facecolor("#0a0a0a")
-
-    # Set up the bar positions
-    x = np.arange(len(comparison_df))
-    width = 0.35
-
-    # Create bars
-    churned_bars = ax.bar(
-        x - width/2,
-        comparison_df['Churned'],
-        width,
-        label='Churned Users',
-        color='#FF7F7F',
-        alpha=0.9,
-        edgecolor="#0f0f0f",
-        linewidth=1.0,
-    )
-    active_bars = ax.bar(
-        x + width/2,
-        comparison_df['Active'],
-        width,
-        label='Active Users',
-        color='#4ade80',
-        alpha=0.9,
-        edgecolor="#0f0f0f",
-        linewidth=1.0,
-    )
-
-    # Customize the plot
-    ax.set_xlabel('', fontsize=12, fontweight='bold', color="#e5e7eb")
-    ax.set_ylabel('Average Value', fontsize=12, fontweight='bold', color="#e5e7eb", labelpad=8)
-    ax.set_title('', fontsize=14, fontweight='bold', pad=20, color="#e5e7eb")
-    ax.set_xticks(x)
-    ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10, color="#e5e7eb")
-    ax.tick_params(axis='y', colors="#e5e7eb")
-    ax.legend(fontsize=11, facecolor="#0a0a0a", edgecolor="#2a2a2a", labelcolor="#e5e7eb")
-
-    # Add grid and spine styling
-    ax.grid(axis='y', alpha=0.4, color="#2a2a2a")
-    for spine in ax.spines.values():
-        spine.set_color("#2a2a2a")
-
-    # Add value labels on bars
-    def add_value_labels(bars):
         for bar in bars:
-            height = bar.get_height()
+            width = bar.get_width()
             ax.text(
-                bar.get_x() + bar.get_width()/2.,
-                height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
-                f'{height:.1f}',
-                ha='center',
-                va='bottom',
-                fontsize=11,
-                fontweight='bold',
+                width + (0.002 if width >= 0 else -0.002),
+                bar.get_y() + bar.get_height()/2,
+                f'{width:.3f}',
+                ha='left' if width >= 0 else 'right',
+                va='center',
+                fontsize=10,
                 color="#e5e7eb",
             )
 
-    add_value_labels(churned_bars)
-    add_value_labels(active_bars)
+        plt.tight_layout()
+        st.pyplot(fig)
 
-    plt.tight_layout()
-    st.pyplot(fig)
+        # 5. Churned vs Active Users Comparison
+        st.subheader(_("churned_vs_active_users_comparison"))
 
-    # Users evolution (last 12 months)
-    st.subheader("Users evolution")
-    today = pd.Timestamp.today().normalize()
-    start_month = (today - pd.DateOffset(months=11)).replace(day=1)
-    months_range = pd.date_range(start_month, today, freq='MS')
+        churned = features_df[features_df['CHURNED'] == 1]
+        active = features_df[features_df['CHURNED'] == 0]
 
-    evolution_rows = []
-    for month_start in months_range:
-        month_end = month_start + pd.offsets.MonthEnd(1)
-        label = month_start.strftime("%Y-%m")
-        new_count = users_df[users_df['REGISTRATION_DATE'].dt.to_period('M') == month_start.to_period('M')].shape[0]
-        churned_count = users_df[
-            users_df['MEMBERSHIP_END_DATE'].notna() &
-            (users_df['MEMBERSHIP_END_DATE'].dt.to_period('M') == month_start.to_period('M'))
-        ].shape[0]
-        active_count = users_df[
-            (users_df['REGISTRATION_DATE'] <= month_end) &
-            (
-                users_df['MEMBERSHIP_END_DATE'].isna() |
-                (users_df['MEMBERSHIP_END_DATE'] > month_end)
+        feature_comparisons = {
+            'visits_per_month': 'Visits per Month',
+            'days_since_last_visit': 'Days Since Last Visit',
+            'avg_session_duration_min': 'Avg Session Duration (min)',
+            'visit_frequency_trend': 'Visit Frequency Trend',
+            'num_classes_enrolled': 'Classes Enrolled'
+        }
+
+        comparison_data = []
+        for feature_key, feature_name in feature_comparisons.items():
+            comparison_data.append({
+                'Feature': feature_name,
+                'Churned': churned[feature_key].mean(),
+                'Active': active[feature_key].mean(),
+                'Feature_Key': feature_key
+            })
+
+        comparison_df = pd.DataFrame(comparison_data)
+
+        fig, ax = plt.subplots(figsize=(14, 8), facecolor="#0a0a0a")
+        ax.set_facecolor("#0a0a0a")
+
+        x = np.arange(len(comparison_df))
+        width = 0.35
+
+        churned_bars = ax.bar(
+            x - width/2,
+            comparison_df['Churned'],
+            width,
+            label='Churned Users',
+            color='#FF7F7F',
+            alpha=0.9,
+            edgecolor="#0f0f0f",
+            linewidth=1.0,
+        )
+        active_bars = ax.bar(
+            x + width/2,
+            comparison_df['Active'],
+            width,
+            label='Active Users',
+            color='#4ade80',
+            alpha=0.9,
+            edgecolor="#0f0f0f",
+            linewidth=1.0,
+        )
+
+        ax.set_xlabel('', fontsize=12, fontweight='bold', color="#e5e7eb")
+        ax.set_ylabel('Average Value', fontsize=12, fontweight='bold', color="#e5e7eb", labelpad=8)
+        ax.set_title('', fontsize=14, fontweight='bold', pad=20, color="#e5e7eb")
+        ax.set_xticks(x)
+        ax.set_xticklabels(comparison_df['Feature'], rotation=45, ha='right', fontsize=10, color="#e5e7eb")
+        ax.tick_params(axis='y', colors="#e5e7eb")
+        ax.legend(fontsize=11, facecolor="#0a0a0a", edgecolor="#2a2a2a", labelcolor="#e5e7eb")
+
+        ax.grid(axis='y', alpha=0.4, color="#2a2a2a")
+        for spine in ax.spines.values():
+            spine.set_color("#2a2a2a")
+
+        def add_value_labels(bars):
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(
+                    bar.get_x() + bar.get_width()/2.,
+                    height + max(comparison_df[['Churned', 'Active']].max()) * 0.02,
+                    f'{height:.1f}',
+                    ha='center',
+                    va='bottom',
+                    fontsize=11,
+                    fontweight='bold',
+                    color="#e5e7eb",
+                )
+
+        add_value_labels(churned_bars)
+        add_value_labels(active_bars)
+
+        plt.tight_layout()
+        st.pyplot(fig)
+        return
+
+    def render_behavior_page():
+        # Group Segmentation
+        st.subheader("Group Segmentation")
+
+        def plot_churn_rate(df, group_col, title, color_map=None, category_order=None, y_label=""):
+            if df.empty or group_col not in df.columns:
+                st.info(f"No data available for {title}.")
+                return
+            grouped = (
+                df.groupby(group_col)['CHURNED']
+                .mean()
+                .mul(100)
+                .reset_index()
+                .rename(columns={'CHURNED': 'Churn Rate (%)'})
             )
-        ].shape[0]
-        evolution_rows.append(
-            {"Month": label, "Active": active_count, "New": new_count, "Churned": churned_count}
+            fig = px.bar(
+                grouped,
+                y=group_col,
+                x='Churn Rate (%)',
+                color=group_col if color_map else None,
+                color_discrete_map=color_map if color_map else None,
+                category_orders={group_col: category_order} if category_order else None,
+                orientation="h",
+            )
+            fig.update_traces(
+                marker_line_width=0.5,
+                marker_line_color="#0f0f0f",
+                hovertemplate="%{y}: %{x:.1f}%",
+                texttemplate="%{x:.1f}%",
+                textposition="outside",
+                cliponaxis=False,
+            )
+            fig.update_layout(
+                xaxis_title="Churn Rate (%)",
+                yaxis_title=y_label,
+                bargap=0.2,
+                bargroupgap=0.15,
+                showlegend=False,
+                yaxis_categoryorder='array' if category_order else None,
+                yaxis_categoryarray=category_order if category_order else None,
+                plot_bgcolor="#0a0a0a",
+                paper_bgcolor="#0a0a0a",
+                xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+                yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+            )
+            if not color_map:
+                fig.update_traces(marker_color="#4ade80")
+            st.markdown(f"**{title}**")
+            st.plotly_chart(fig, use_container_width=True)
+
+        seg_df = users_df.copy()
+        if 'CHURNED' not in seg_df.columns:
+            seg_df['CHURNED'] = seg_df['MEMBERSHIP_END_DATE'].notna().astype(int)
+        else:
+            seg_df['CHURNED'] = seg_df['CHURNED'].astype(int)
+
+        gender_map = {"F": "#60a5fa", "M": "#4ade80"}
+        seg_df['GENDER_LABEL'] = seg_df['GENDER'].map({"F": "Female", "M": "Male"}).fillna(seg_df['GENDER'])
+        plot_churn_rate(seg_df, 'GENDER_LABEL', "Churn rate by gender", color_map={"Female": "#60a5fa", "Male": "#4ade80"})
+
+        class_cols = [c for c in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING'] if c in seg_df.columns]
+        if class_cols:
+            seg_df['NUM_CLASSES'] = seg_df[class_cols].sum(axis=1)
+            def classes_bin(n):
+                if n <= 1:
+                    return "0-1"
+                elif n <= 3:
+                    return "2-3"
+                return "4+"
+            seg_df['CLASSES_BIN'] = seg_df['NUM_CLASSES'].apply(classes_bin)
+            classes_map = {"0-1": "#4ade80", "2-3": "#60a5fa", "4+": "#f472b6"}
+            plot_churn_rate(
+                seg_df,
+                'CLASSES_BIN',
+                "Churn rate by number of enrolled classes",
+                category_order=["0-1", "2-3", "4+"],
+                color_map=classes_map,
+                y_label="Enrolled classes",
+            )
+
+        today_ts = pd.Timestamp.today().normalize()
+        seg_df['TENURE_MONTHS'] = (today_ts - seg_df['REGISTRATION_DATE']).dt.days / 30.4
+        def tenure_bin(m):
+            if m <= 1:
+                return "0-1"
+            elif m <= 3:
+                return "1-3"
+            elif m <= 6:
+                return "3-6"
+            return "6+"
+        seg_df['TENURE_BIN'] = seg_df['TENURE_MONTHS'].apply(tenure_bin)
+        tenure_map = {"0-1": "#4ade80", "1-3": "#60a5fa", "3-6": "#f59e0b", "6+": "#f472b6"}
+        plot_churn_rate(
+            seg_df,
+            'TENURE_BIN',
+            "Churn rate by tenure",
+            category_order=["0-1", "1-3", "3-6", "6+"],
+            color_map=tenure_map,
+            y_label="Time since registration",
         )
 
-    evolution_df = pd.DataFrame(evolution_rows)
-    # Users evolution (last 12 months) - no title
-    fig_evo = px.bar(
-        evolution_df,
-        x="Month",
-        y=["Active", "New", "Churned"],
-        barmode="group",
-        title="",
-        color_discrete_map={
-            "Active": "#4ade80",
-            "New": "#60a5fa",
-            "Churned": "#f472b6",
-        },
-    )
-    fig_evo.update_traces(
-        marker_line_width=0.5,
-        marker_line_color="#0f0f0f",
-        hovertemplate="%{x}: %{y}",
-        texttemplate="%{y}",
-        textposition="outside",
-        cliponaxis=False,
-    )
-    fig_evo.update_layout(
-        xaxis_title="",
-        yaxis_title="Users",
-        xaxis_tickangle=-45,
-        bargap=0.15,
-        bargroupgap=0.1,
-        plot_bgcolor="#0a0a0a",
-        paper_bgcolor="#0a0a0a",
-        xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
-        yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
-    )
-    st.plotly_chart(fig_evo, use_container_width=True)
-
-    # Activity heatmap and time series (open hours buckets, last 2 months)
-    st.markdown(f"#### {translate('calendar_activity_title', default='Calendar Activity')}")
-    heat_start = (today - pd.DateOffset(months=2)).normalize()
-    visits_recent = visits_df[visits_df['ENTRY_TIME'] >= heat_start].copy()
-    if not visits_recent.empty:
-        max_date = visits_recent['ENTRY_TIME'].max().normalize()
-    else:
-        max_date = today
-    open_start_hour = 8   # gym opens at 08:00
-    open_end_hour = 22    # gym closes at 22:00
-    bucket_size = 2       # 2-hour buckets make the plot denser and focused
-    if not visits_recent.empty:
-        visits_recent['date'] = visits_recent['ENTRY_TIME'].dt.date
-        visits_recent['hour'] = visits_recent['ENTRY_TIME'].dt.hour
-
-        visits_recent = visits_recent[
-            (visits_recent['hour'] >= open_start_hour) & (visits_recent['hour'] < open_end_hour)
-        ].copy()
-
-        visits_recent['bucket_start'] = ((visits_recent['hour'] - open_start_hour) // bucket_size) * bucket_size + open_start_hour
-        visits_recent['bucket_label'] = visits_recent['bucket_start'].astype(int).astype(str).str.zfill(2) + ":00"
-
-        heat_counts = (
-            visits_recent
-            .groupby(['date', 'bucket_label'])
-            .size()
-            .reset_index(name='count')
+        age_bins = [0, 25, 35, 50, 120]
+        age_labels = ["0-25", "25-35", "35-50", "50+"]
+        seg_df['AGE_BIN'] = pd.cut(seg_df['AGE'], bins=age_bins, labels=age_labels, right=False)
+        age_map = {"0-25": "#4ade80", "25-35": "#60a5fa", "35-50": "#f59e0b", "50+": "#f472b6"}
+        plot_churn_rate(
+            seg_df,
+            'AGE_BIN',
+            "Churn rate by age",
+            category_order=age_labels,
+            color_map=age_map,
+            y_label="Age",
         )
 
-        all_buckets = [f"{str(b).zfill(2)}:00" for b in range(open_start_hour, open_end_hour, bucket_size)]
-        all_dates = pd.date_range(heat_start, max_date, freq='D').date
-        full_index = pd.MultiIndex.from_product([all_dates, all_buckets], names=['date', 'bucket_label'])
-        heat_counts = heat_counts.set_index(['date', 'bucket_label']).reindex(full_index, fill_value=0).reset_index()
+        # Users evolution (last 12 months)
+        st.subheader("Users evolution")
+        today = pd.Timestamp.today().normalize()
+        start_month = (today - pd.DateOffset(months=11)).replace(day=1)
+        months_range = pd.date_range(start_month, today, freq='MS')
 
-        heat_pivot = heat_counts.pivot(index='date', columns='bucket_label', values='count')
-        heat_pivot = heat_pivot.sort_index(ascending=False)
+        evolution_rows = []
+        for month_start in months_range:
+            month_end = month_start + pd.offsets.MonthEnd(1)
+            label = month_start.strftime("%Y-%m")
+            new_count = users_df[users_df['REGISTRATION_DATE'].dt.to_period('M') == month_start.to_period('M')].shape[0]
+            churned_count = users_df[
+                users_df['MEMBERSHIP_END_DATE'].notna() &
+                (users_df['MEMBERSHIP_END_DATE'].dt.to_period('M') == month_start.to_period('M'))
+            ].shape[0]
+            active_count = users_df[
+                (users_df['REGISTRATION_DATE'] <= month_end) &
+                (
+                    users_df['MEMBERSHIP_END_DATE'].isna() |
+                    (users_df['MEMBERSHIP_END_DATE'] > month_end)
+                )
+            ].shape[0]
+            evolution_rows.append(
+                {"Month": label, "Active": active_count, "New": new_count, "Churned": churned_count}
+            )
 
-        st.markdown(f"**{translate('activity_heatmap_subtitle', default='Activity heatmap')}**")
-
-        fig_heat = px.imshow(
-            heat_pivot,
-            color_continuous_scale="YlOrRd",
-            aspect="auto",
-            labels=dict(color="Entries"),
+        evolution_df = pd.DataFrame(evolution_rows)
+        fig_evo = px.bar(
+            evolution_df,
+            x="Month",
+            y=["Active", "New", "Churned"],
+            barmode="group",
+            title="",
+            color_discrete_map={
+                "Active": "#4ade80",
+                "New": "#60a5fa",
+                "Churned": "#f472b6",
+            },
         )
-        fig_heat.update_layout(
-            xaxis_title=f"{bucket_size}-hour bucket (open hours)",
-            yaxis_title="Date",
-            plot_bgcolor="#0a0a0a",
-            paper_bgcolor="#0a0a0a",
-            coloraxis_colorbar=dict(
-                title="Entries",
-                title_font=dict(color="#e5e7eb"),
-                tickfont=dict(color="#e5e7eb"),
-            ),
-            xaxis=dict(
-                showgrid=False,
-                zeroline=False,
-                tickfont=dict(color="#e5e7eb"),
-                title_font=dict(color="#e5e7eb"),
-            ),
-            yaxis=dict(
-                showgrid=False,
-                zeroline=False,
-                tickfont=dict(color="#e5e7eb"),
-                title_font=dict(color="#e5e7eb"),
-            ),
-            margin=dict(l=0, r=0, t=0, b=0),
-        )
-        fig_heat.update_traces(hovertemplate="Date: %{y}<br>Bucket: %{x}<br>Entries: %{z}<extra></extra>")
-        st.plotly_chart(fig_heat, use_container_width=True)
-
-        ts_counts = (
-            heat_counts
-            .groupby('date')['count']
-            .sum()
-            .reset_index()
-            .sort_values('date')
-        )
-        ts_counts['date'] = pd.to_datetime(ts_counts['date'])
-        ts_counts['is_weekend'] = ts_counts['date'].dt.dayofweek >= 5
-        ts_counts['color'] = ts_counts['is_weekend'].map({True: "#f472b6", False: "#4ade80"})
-        st.markdown(f"**{translate('activity_time_series_subtitle', default='Activity time series')}**")
-
-        fig_ts = px.bar(
-            ts_counts,
-            x='date',
-            y='count',
-            labels={'date': 'Date', 'count': 'Entries'},
-            color='color',
-            color_discrete_map="identity",
-        )
-        fig_ts.update_traces(
-            showlegend=False,
+        fig_evo.update_traces(
             marker_line_width=0.5,
             marker_line_color="#0f0f0f",
-            hovertemplate="%{x|%Y-%m-%d}: %{y}",
+            hovertemplate="%{x}: %{y}",
             texttemplate="%{y}",
             textposition="outside",
             cliponaxis=False,
         )
-        fig_ts.update_layout(
+        fig_evo.update_layout(
             xaxis_title="",
-            yaxis_title="Entries",
+            yaxis_title="Users",
             xaxis_tickangle=-45,
+            bargap=0.15,
+            bargroupgap=0.1,
             plot_bgcolor="#0a0a0a",
             paper_bgcolor="#0a0a0a",
             xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
             yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
         )
-        st.plotly_chart(fig_ts, use_container_width=True)
-    else:
-        st.info("No visits in the last 2 months to display.")
+        st.plotly_chart(fig_evo, use_container_width=True)
 
-    # Churned compared to time since registration
-    st.subheader(translate("churn_vs_time_section", default="Churned compared to time since registration"))
-    if users_df.empty or 'REGISTRATION_DATE' not in users_df.columns:
-        st.info(translate("no_data_churn_vs_time", default="No data available to plot churn vs time since registration."))
-    else:
-        churn_curve_df = users_df.copy()
-        if 'CHURNED' not in churn_curve_df.columns:
-            churn_curve_df['CHURNED'] = churn_curve_df['MEMBERSHIP_END_DATE'].notna().astype(int)
+        # Activity heatmap and time series (open hours buckets, last 2 months)
+        st.markdown(f"#### {translate('calendar_activity_title', default='Calendar Activity')}")
+        heat_start = (today - pd.DateOffset(months=2)).normalize()
+        visits_recent = visits_df[visits_df['ENTRY_TIME'] >= heat_start].copy()
+        if not visits_recent.empty:
+            max_date = visits_recent['ENTRY_TIME'].max().normalize()
         else:
-            churn_curve_df['CHURNED'] = churn_curve_df['CHURNED'].astype(int)
+            max_date = today
+        open_start_hour = 8
+        open_end_hour = 22
+        bucket_size = 2
+        if not visits_recent.empty:
+            visits_recent['date'] = visits_recent['ENTRY_TIME'].dt.date
+            visits_recent['hour'] = visits_recent['ENTRY_TIME'].dt.hour
 
-        today_ts = pd.Timestamp.today().normalize()
-        churn_curve_df['TENURE_MONTH'] = ((today_ts - churn_curve_df['REGISTRATION_DATE']).dt.days / 30.4).clip(lower=0)
-        churn_curve_df['TENURE_MONTH'] = churn_curve_df['TENURE_MONTH'].round().astype(int)
-        max_month = int(churn_curve_df['TENURE_MONTH'].max()) if not churn_curve_df.empty else 0
-        month_index = pd.Index(range(0, max_month + 1))
+            visits_recent = visits_recent[
+                (visits_recent['hour'] >= open_start_hour) & (visits_recent['hour'] < open_end_hour)
+            ].copy()
 
-        churn_curve = (
-            churn_curve_df.groupby('TENURE_MONTH')['CHURNED']
-            .mean()
-            .mul(100)
-            .reindex(month_index)
-            .reset_index()
-        )
-        churn_curve.columns = ["Months since registration", "Churn Rate (%)"]
+            visits_recent['bucket_start'] = ((visits_recent['hour'] - open_start_hour) // bucket_size) * bucket_size + open_start_hour
+            visits_recent['bucket_label'] = visits_recent['bucket_start'].astype(int).astype(str).str.zfill(2) + ":00"
 
-        fig_curve = px.line(
-            churn_curve,
-            x="Months since registration",
-            y="Churn Rate (%)",
-            markers=True,
-            labels={
-                "Months since registration": translate("time_since_registration_axis", default="Time since registration (months)"),
-                "Churn Rate (%)": translate("churn_rate_axis", default="Churn rate (%)"),
-            },
-        )
-        # Base line and points in white for contrast
-        fig_curve.update_traces(line_color="#ffffff", marker_color="#ffffff")
-        # Add linear trend line in green (only if at least 2 valid points)
-        churn_clean = churn_curve.dropna(subset=["Churn Rate (%)"])
-        if len(churn_clean) >= 2:
-            x_vals = churn_clean["Months since registration"].to_numpy()
-            y_vals = churn_clean["Churn Rate (%)"].to_numpy()
-            coeffs = np.polyfit(x_vals, y_vals, 1)
-            churn_curve["trend"] = coeffs[0] * churn_curve["Months since registration"] + coeffs[1]
-            fig_curve.add_scatter(
-                x=churn_curve["Months since registration"],
-                y=churn_curve["trend"],
-                mode="lines",
-                name="Trend",
-                line=dict(color="#4ade80", width=3),
-                showlegend=False,
+            heat_counts = (
+                visits_recent
+                .groupby(['date', 'bucket_label'])
+                .size()
+                .reset_index(name='count')
             )
-        fig_curve.update_layout(
-            xaxis_title=translate("time_since_registration_axis", default="Time since registration (months)"),
-            yaxis_title=translate("churn_rate_axis", default="Churn rate (%)"),
-            hovermode="x unified",
-            plot_bgcolor="#0a0a0a",
-            paper_bgcolor="#0a0a0a",
-            xaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
-            yaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
-        )
-        st.plotly_chart(fig_curve, use_container_width=True)
 
-    # Group Segmentation
-    st.subheader("Group Segmentation")
+            all_buckets = [f"{str(b).zfill(2)}:00" for b in range(open_start_hour, open_end_hour, bucket_size)]
+            all_dates = pd.date_range(heat_start, max_date, freq='D').date
+            full_index = pd.MultiIndex.from_product([all_dates, all_buckets], names=['date', 'bucket_label'])
+            heat_counts = heat_counts.set_index(['date', 'bucket_label']).reindex(full_index, fill_value=0).reset_index()
 
-    def plot_churn_rate(df, group_col, title, color_map=None, category_order=None, y_label=""):
-        if df.empty or group_col not in df.columns:
-            st.info(f"No data available for {title}.")
-            return
-        grouped = (
-            df.groupby(group_col)['CHURNED']
-            .mean()
-            .mul(100)
-            .reset_index()
-            .rename(columns={'CHURNED': 'Churn Rate (%)'})
-        )
-        fig = px.bar(
-            grouped,
-            y=group_col,
-            x='Churn Rate (%)',
-            color=group_col if color_map else None,
-            color_discrete_map=color_map if color_map else None,
-            category_orders={group_col: category_order} if category_order else None,
-            orientation="h",
-        )
-        fig.update_traces(
-            marker_line_width=0.5,
-            marker_line_color="#0f0f0f",
-            hovertemplate="%{y}: %{x:.1f}%",
-            texttemplate="%{x:.1f}%",
-            textposition="outside",
-            cliponaxis=False,
-        )
-        fig.update_layout(
-            xaxis_title="Churn Rate (%)",
-            yaxis_title=y_label,
-            bargap=0.2,
-            bargroupgap=0.15,
-            showlegend=False,
-            yaxis_categoryorder='array' if category_order else None,
-            yaxis_categoryarray=category_order if category_order else None,
-            plot_bgcolor="#0a0a0a",
-            paper_bgcolor="#0a0a0a",
-            xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
-            yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
-        )
-        if not color_map:
-            fig.update_traces(marker_color="#4ade80")
-        st.markdown(f"**{title}**")
-        st.plotly_chart(fig, use_container_width=True)
+            heat_pivot = heat_counts.pivot(index='date', columns='bucket_label', values='count')
+            heat_pivot = heat_pivot.sort_index(ascending=False)
 
-    # Base dataframe for churn segmentation
-    seg_df = users_df.copy()
-    if 'CHURNED' not in seg_df.columns:
-        seg_df['CHURNED'] = seg_df['MEMBERSHIP_END_DATE'].notna().astype(int)
-    else:
-        seg_df['CHURNED'] = seg_df['CHURNED'].astype(int)
+            st.markdown(f"**{translate('activity_heatmap_subtitle', default='Activity heatmap')}**")
 
-    # Churn rate by gender
-    gender_map = {"F": "#60a5fa", "M": "#4ade80"}
-    seg_df['GENDER_LABEL'] = seg_df['GENDER'].map({"F": "Female", "M": "Male"}).fillna(seg_df['GENDER'])
-    plot_churn_rate(seg_df, 'GENDER_LABEL', "Churn rate by gender", color_map={"Female": "#60a5fa", "Male": "#4ade80"})
+            fig_heat = px.imshow(
+                heat_pivot,
+                color_continuous_scale="YlOrRd",
+                aspect="auto",
+                labels=dict(color="Entries"),
+            )
+            fig_heat.update_layout(
+                xaxis_title=f"{bucket_size}-hour bucket (open hours)",
+                yaxis_title="Date",
+                plot_bgcolor="#0a0a0a",
+                paper_bgcolor="#0a0a0a",
+                coloraxis_colorbar=dict(
+                    title="Entries",
+                    title_font=dict(color="#e5e7eb"),
+                    tickfont=dict(color="#e5e7eb"),
+                ),
+                xaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    tickfont=dict(color="#e5e7eb"),
+                    title_font=dict(color="#e5e7eb"),
+                ),
+                yaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    tickfont=dict(color="#e5e7eb"),
+                    title_font=dict(color="#e5e7eb"),
+                ),
+                margin=dict(l=0, r=0, t=0, b=0),
+            )
+            fig_heat.update_traces(hovertemplate="Date: %{y}<br>Bucket: %{x}<br>Entries: %{z}<extra></extra>")
+            st.plotly_chart(fig_heat, use_container_width=True)
 
-    # Churn rate by number of enrolled classes (0–1, 2–3, 4+)
-    class_cols = [c for c in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING'] if c in seg_df.columns]
-    if class_cols:
-        seg_df['NUM_CLASSES'] = seg_df[class_cols].sum(axis=1)
-        def classes_bin(n):
-            if n <= 1:
-                return "0-1"
-            elif n <= 3:
-                return "2-3"
-            return "4+"
-        seg_df['CLASSES_BIN'] = seg_df['NUM_CLASSES'].apply(classes_bin)
-        classes_map = {"0-1": "#4ade80", "2-3": "#60a5fa", "4+": "#f472b6"}
-        plot_churn_rate(
-            seg_df,
-            'CLASSES_BIN',
-            "Churn rate by number of enrolled classes",
-            category_order=["0-1", "2-3", "4+"],
-            color_map=classes_map,
-            y_label="Enrolled classes",
-        )
+            ts_counts = (
+                heat_counts
+                .groupby('date')['count']
+                .sum()
+                .reset_index()
+                .sort_values('date')
+            )
+            ts_counts['date'] = pd.to_datetime(ts_counts['date'])
+            ts_counts['is_weekend'] = ts_counts['date'].dt.dayofweek >= 5
+            ts_counts['color'] = ts_counts['is_weekend'].map({True: "#f472b6", False: "#4ade80"})
+            st.markdown(f"**{translate('activity_time_series_subtitle', default='Activity time series')}**")
 
-    # Churn rate by tenure buckets (0–1, 1–3, 3–6, 6+ months)
-    today_ts = pd.Timestamp.today().normalize()
-    seg_df['TENURE_MONTHS'] = (today_ts - seg_df['REGISTRATION_DATE']).dt.days / 30.4
-    def tenure_bin(m):
-        if m <= 1:
-            return "0-1"
-        elif m <= 3:
-            return "1-3"
-        elif m <= 6:
-            return "3-6"
-        return "6+"
-    seg_df['TENURE_BIN'] = seg_df['TENURE_MONTHS'].apply(tenure_bin)
-    tenure_map = {"0-1": "#4ade80", "1-3": "#60a5fa", "3-6": "#f59e0b", "6+": "#f472b6"}
-    plot_churn_rate(
-        seg_df,
-        'TENURE_BIN',
-        "Churn rate by tenure",
-        category_order=["0-1", "1-3", "3-6", "6+"],
-        color_map=tenure_map,
-        y_label="Time since registration",
-    )
+            fig_ts = px.bar(
+                ts_counts,
+                x='date',
+                y='count',
+                labels={'date': 'Date', 'count': 'Entries'},
+                color='color',
+                color_discrete_map="identity",
+            )
+            fig_ts.update_traces(
+                showlegend=False,
+                marker_line_width=0.5,
+                marker_line_color="#0f0f0f",
+                hovertemplate="%{x|%Y-%m-%d}: %{y}",
+                texttemplate="%{y}",
+                textposition="outside",
+                cliponaxis=False,
+            )
+            fig_ts.update_layout(
+                xaxis_title="",
+                yaxis_title="Entries",
+                xaxis_tickangle=-45,
+                plot_bgcolor="#0a0a0a",
+                paper_bgcolor="#0a0a0a",
+                xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+                yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+            )
+            st.plotly_chart(fig_ts, use_container_width=True)
+        else:
+            st.info("No visits in the last 2 months to display.")
 
-    # Churn rate by age bins
-    age_bins = [0, 25, 35, 50, 120]
-    age_labels = ["0-25", "25-35", "35-50", "50+"]
-    seg_df['AGE_BIN'] = pd.cut(seg_df['AGE'], bins=age_bins, labels=age_labels, right=False)
-    age_map = {"0-25": "#4ade80", "25-35": "#60a5fa", "35-50": "#f59e0b", "50+": "#f472b6"}
-    plot_churn_rate(
-        seg_df,
-        'AGE_BIN',
-        "Churn rate by age",
-        category_order=age_labels,
-        color_map=age_map,
-        y_label="Age",
-    )
+        # Churned compared to time since registration
+        st.subheader(translate("churn_vs_time_section", default="Churned compared to time since registration"))
+        if users_df.empty or 'REGISTRATION_DATE' not in users_df.columns:
+            st.info(translate("no_data_churn_vs_time", default="No data available to plot churn vs time since registration."))
+        else:
+            churn_curve_df = users_df.copy()
+            if 'CHURNED' not in churn_curve_df.columns:
+                churn_curve_df['CHURNED'] = churn_curve_df['MEMBERSHIP_END_DATE'].notna().astype(int)
+            else:
+                churn_curve_df['CHURNED'] = churn_curve_df['CHURNED'].astype(int)
 
-    # Footer spacing and render
-    st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
-    render_footer()
+            today_ts = pd.Timestamp.today().normalize()
+            churn_curve_df['TENURE_MONTH'] = ((today_ts - churn_curve_df['REGISTRATION_DATE']).dt.days / 30.4).clip(lower=0)
+            churn_curve_df['TENURE_MONTH'] = churn_curve_df['TENURE_MONTH'].round().astype(int)
+            max_month = int(churn_curve_df['TENURE_MONTH'].max()) if not churn_curve_df.empty else 0
+            month_index = pd.Index(range(0, max_month + 1))
+
+            churn_curve = (
+                churn_curve_df.groupby('TENURE_MONTH')['CHURNED']
+                .mean()
+                .mul(100)
+                .reindex(month_index)
+                .reset_index()
+            )
+            churn_curve.columns = ["Months since registration", "Churn Rate (%)"]
+
+            fig_curve = px.line(
+                churn_curve,
+                x="Months since registration",
+                y="Churn Rate (%)",
+                markers=True,
+                labels={
+                    "Months since registration": translate("time_since_registration_axis", default="Time since registration (months)"),
+                    "Churn Rate (%)": translate("churn_rate_axis", default="Churn rate (%)"),
+                },
+            )
+            fig_curve.update_traces(line_color="#ffffff", marker_color="#ffffff")
+            churn_clean = churn_curve.dropna(subset=["Churn Rate (%)"])
+            if len(churn_clean) >= 2:
+                x_vals = churn_clean["Months since registration"].to_numpy()
+                y_vals = churn_clean["Churn Rate (%)"].to_numpy()
+                coeffs = np.polyfit(x_vals, y_vals, 1)
+                churn_curve["trend"] = coeffs[0] * churn_curve["Months since registration"] + coeffs[1]
+                fig_curve.add_scatter(
+                    x=churn_curve["Months since registration"],
+                    y=churn_curve["trend"],
+                    mode="lines",
+                    name="Trend",
+                    line=dict(color="#4ade80", width=3),
+                    showlegend=False,
+                )
+            fig_curve.update_layout(
+                xaxis_title=translate("time_since_registration_axis", default="Time since registration (months)"),
+                yaxis_title=translate("churn_rate_axis", default="Churn rate (%)"),
+                hovermode="x unified",
+                plot_bgcolor="#0a0a0a",
+                paper_bgcolor="#0a0a0a",
+                xaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
+                yaxis=dict(gridcolor="#2a2a2a", zeroline=False, tickfont=dict(color="#e5e7eb"), title_font=dict(color="#e5e7eb")),
+            )
+            st.plotly_chart(fig_curve, use_container_width=True)
+
+        st.markdown("<div style='height:24px'></div>", unsafe_allow_html=True)
+        render_footer()
+
+    if page == "Behavior & Segmentation":
+        render_behavior_page()
+        return
 
 
 # Language selector with custom styling
