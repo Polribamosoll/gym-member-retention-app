@@ -445,37 +445,10 @@ def main_app():
             # Get current language with fallback
             current_lang = st.session_state.get("lang", "en")
 
-            if st.button("ℹ️", key="model_info", help=translate("how_the_ai_model_works")):
+            if st.button("ℹ️", key="model_info"):
                 # Create a modal dialog for the documentation
                 @st.dialog(translate("how_the_ai_model_works"))
                 def show_model_documentation():
-                    # Create a placeholder for the loading/content
-                    content_placeholder = st.empty()
-
-                    # Show prominent loading spinner first
-                    with content_placeholder.container():
-                        # Center the loading content
-                        col1, col2, col3 = st.columns([1, 2, 1])
-
-                        with col2:
-                            st.markdown(
-                                f"""
-                                <div style='text-align: center; padding: 50px;'>
-                                    <h2 style='color: #4ade80; margin-bottom: 30px;'>🤖 {translate('model_documentation_loading_title')}</h2>
-                                    <div style='font-size: 18px; color: #ffffff; margin-bottom: 20px;'>{translate('loading_message')}</div>
-                                </div>
-                                """,
-                                unsafe_allow_html=True,
-                            )
-
-                            with st.spinner(""):
-                                import time
-                                time.sleep(1.0)  # Slightly longer loading animation
-
-                    # Clear the placeholder and show the actual content
-                    content_placeholder.empty()
-
-                    # Now show the actual documentation content
                     # Apply the same dark theme styling to the modal
                     st.markdown("""
                     <style>
