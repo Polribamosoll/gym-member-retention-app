@@ -653,15 +653,34 @@ def main_app():
         hole=0.5  # Create the donut shape
     )
 
-    # Update layout for donut chart
+    # Update layout for donut chart with professional styling
     fig.update_layout(
-        showlegend=True,  # Show legend for pie chart
-        uniformtext_minsize=12, 
-        uniformtext_mode='hide'
+        showlegend=True,
+        legend_title=None,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="center",
+            x=0.5,
+            font=dict(color="#e5e7eb")
+        ),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide',
+        plot_bgcolor="#0a0a0a",
+        paper_bgcolor="#0a0a0a",
+        font=dict(color="#e5e7eb"),
+        margin=dict(t=0, b=0, l=0, r=0),
     )
 
-    # Update text and hover info for pie chart
-    fig.update_traces(textposition='inside', textinfo='percent+label', hoverinfo='label+percent+value')
+    # Update text, hover info, and add subtle outlines
+    fig.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hovertemplate="%{label}: %{percent:.1%} (%{value})",
+        marker_line_color="#0f0f0f",
+        marker_line_width=1.2,
+    )
 
     st.plotly_chart(fig)
     
