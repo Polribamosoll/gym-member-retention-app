@@ -937,25 +937,24 @@ def main_app():
         )
 
     evolution_df = pd.DataFrame(evolution_rows)
-    st.markdown("#### Users evolution (last 12 months)")
+    # Users evolution (last 12 months) - no title
     fig_evo = px.bar(
         evolution_df,
-        y="Month",
-        x=["Active", "New", "Churned"],
+        x="Month",
+        y=["Active", "New", "Churned"],
         barmode="group",
         title="",
-        orientation="h",
         color_discrete_map={
             "Active": "#4ade80",
             "New": "#60a5fa",
             "Churned": "#f472b6",
         },
     )
-    fig_evo.update_traces(marker_line_width=0, hovertemplate="%{y}: %{x}")
+    fig_evo.update_traces(marker_line_width=0, hovertemplate="%{x}: %{y}")
     fig_evo.update_layout(
-        xaxis_title="Users",
-        yaxis_title="",
-        yaxis_categoryorder='category ascending',
+        xaxis_title="",
+        yaxis_title="Users",
+        xaxis_tickangle=-45,
         bargap=0.15,
         bargroupgap=0.1,
     )
