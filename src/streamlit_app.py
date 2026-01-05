@@ -1137,6 +1137,7 @@ def main_app():
         "Churn rate by age",
         category_order=age_labels,
         color_map=age_map,
+        y_label="Age",
     )
 
     # Footer spacing and render
