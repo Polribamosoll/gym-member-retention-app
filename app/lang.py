@@ -73,7 +73,11 @@ TRANSLATIONS = {
         "actionable_insights_title": "Actionable Insights",
         "model_documentation_loading_title": "AI Model Documentation",
         "loading_message": "Loading...",
-        "loading_users_message": "Loading users..."
+        "loading_users_message": "Loading users...",
+        "churn_vs_time_section": "Churned compared to time since registration",
+        "time_since_registration_axis": "Time since registration (months)",
+        "churn_rate_axis": "Churn rate (%)",
+        "no_data_churn_vs_time": "No data available to plot churn vs time since registration."
     },
     "es": {
         "gym_churn_predictor": "PREDICTOR DE BAJA DE GIMNASIO",
@@ -134,7 +138,11 @@ TRANSLATIONS = {
         "actionable_insights_title": "Información Accionable",
         "model_documentation_loading_title": "Documentación del Modelo de IA",
         "loading_message": "Cargando...",
-        "loading_users_message": "Cargando usuarios..."
+        "loading_users_message": "Cargando usuarios...",
+        "churn_vs_time_section": "Usuarios dados de baja según tiempo desde el registro",
+        "time_since_registration_axis": "Tiempo desde el registro (meses)",
+        "churn_rate_axis": "Tasa de baja (%)",
+        "no_data_churn_vs_time": "No hay datos disponibles para mostrar la baja según el tiempo desde el registro."
     },
     "ca": {
         "gym_churn_predictor": "PREDICTOR DE BAIMES DE GIMNÀS",
@@ -195,6 +203,10 @@ TRANSLATIONS = {
         "actionable_insights_title": "Informació Accionable",
         "model_documentation_loading_title": "Documentació del Model d'IA",
         "loading_message": "Carregant...",
-        "loading_users_message": "Carregant usuaris..."
+        "loading_users_message": "Carregant usuaris...",
+        "churn_vs_time_section": "Baixes segons el temps des del registre",
+        "time_since_registration_axis": "Temps des del registre (mesos)",
+        "churn_rate_axis": "Taxa de baixa (%)",
+        "no_data_churn_vs_time": "No hi ha dades disponibles per mostrar les baixes segons el temps des del registre."
     }
 }

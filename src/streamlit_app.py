@@ -1085,7 +1085,23 @@ def main_app():
                 "Churn Rate (%)": translate("churn_rate_axis", default="Churn rate (%)"),
             },
         )
-        fig_curve.update_traces(line_color="#4ade80", marker_color="#4ade80")
+        # Base line and points in black
+        fig_curve.update_traces(line_color="#000000", marker_color="#000000")
+        # Add linear trend line in green (only if at least 2 valid points)
+        churn_clean = churn_curve.dropna(subset=["Churn Rate (%)"])
+        if len(churn_clean) >= 2:
+            x_vals = churn_clean["Months since registration"].to_numpy()
+            y_vals = churn_clean["Churn Rate (%)"].to_numpy()
+            coeffs = np.polyfit(x_vals, y_vals, 1)
+            churn_curve["trend"] = coeffs[0] * churn_curve["Months since registration"] + coeffs[1]
+            fig_curve.add_scatter(
+                x=churn_curve["Months since registration"],
+                y=churn_curve["trend"],
+                mode="lines",
+                name="Trend",
+                line=dict(color="#4ade80", width=3),
+                showlegend=False,
+            )
         fig_curve.update_layout(
             xaxis_title=translate("time_since_registration_axis", default="Time since registration (months)"),
             yaxis_title=translate("churn_rate_axis", default="Churn rate (%)"),
