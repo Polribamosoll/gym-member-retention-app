@@ -977,7 +977,7 @@ def main_app():
     st.plotly_chart(fig_evo, use_container_width=True)
 
     # Activity heatmap and time series (open hours buckets, last 2 months)
-    st.markdown("#### Activity heatmap and time series (open hours, last 2 months)")
+    st.markdown(f"#### {translate('calendar_activity_title', default='Calendar Activity')}")
     heat_start = (today - pd.DateOffset(months=2)).normalize()
     visits_recent = visits_df[visits_df['ENTRY_TIME'] >= heat_start].copy()
     if not visits_recent.empty:
@@ -1013,6 +1013,8 @@ def main_app():
         heat_pivot = heat_counts.pivot(index='date', columns='bucket_label', values='count')
         heat_pivot = heat_pivot.sort_index(ascending=False)
 
+        st.markdown(f"**{translate('activity_heatmap_subtitle', default='Activity heatmap')}**")
+
         fig_heat = px.imshow(
             heat_pivot,
             color_continuous_scale="YlOrRd",
@@ -1035,6 +1037,8 @@ def main_app():
         ts_counts['date'] = pd.to_datetime(ts_counts['date'])
         ts_counts['is_weekend'] = ts_counts['date'].dt.dayofweek >= 5
         ts_counts['color'] = ts_counts['is_weekend'].map({True: "#f472b6", False: "#4ade80"})
+        st.markdown(f"**{translate('activity_time_series_subtitle', default='Activity time series')}**")
+
         fig_ts = px.bar(
             ts_counts,
             x='date',
