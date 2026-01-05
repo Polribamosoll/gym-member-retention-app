@@ -1136,7 +1136,14 @@ def main_app():
             category_orders={group_col: category_order} if category_order else None,
             orientation="h",
         )
-        fig.update_traces(marker_line_width=0, hovertemplate="%{y}: %{x:.1f}%")
+        fig.update_traces(
+            marker_line_width=0.5,
+            marker_line_color="#0f0f0f",
+            hovertemplate="%{y}: %{x:.1f}%",
+            texttemplate="%{x:.1f}%",
+            textposition="outside",
+            cliponaxis=False,
+        )
         fig.update_layout(
             xaxis_title="Churn Rate (%)",
             yaxis_title=y_label,
@@ -1145,6 +1152,10 @@ def main_app():
             showlegend=False,
             yaxis_categoryorder='array' if category_order else None,
             yaxis_categoryarray=category_order if category_order else None,
+            plot_bgcolor="#0a0a0a",
+            paper_bgcolor="#0a0a0a",
+            xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+            yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
         )
         if not color_map:
             fig.update_traces(marker_color="#4ade80")
