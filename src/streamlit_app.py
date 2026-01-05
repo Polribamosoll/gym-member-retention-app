@@ -1036,7 +1036,7 @@ def main_app():
     # Group Segmentation
     st.subheader("Group Segmentation")
 
-    def plot_churn_rate(df, group_col, title, color_map=None, category_order=None):
+    def plot_churn_rate(df, group_col, title, color_map=None, category_order=None, y_label=""):
         if df.empty or group_col not in df.columns:
             st.info(f"No data available for {title}.")
             return
@@ -1059,7 +1059,7 @@ def main_app():
         fig.update_traces(marker_line_width=0, hovertemplate="%{y}: %{x:.1f}%")
         fig.update_layout(
             xaxis_title="Churn Rate (%)",
-            yaxis_title="",
+            yaxis_title=y_label,
             bargap=0.2,
             bargroupgap=0.15,
             showlegend=False,
@@ -1101,6 +1101,7 @@ def main_app():
             "Churn rate by number of enrolled classes",
             category_order=["0-1", "2-3", "4+"],
             color_map=classes_map,
+            y_label="Enrolled classes",
         )
 
     # Churn rate by tenure buckets (0–1, 1–3, 3–6, 6+ months)
@@ -1122,6 +1123,7 @@ def main_app():
         "Churn rate by tenure",
         category_order=["0-1", "1-3", "3-6", "6+"],
         color_map=tenure_map,
+        y_label="Time since registration",
     )
 
     # Churn rate by age bins
