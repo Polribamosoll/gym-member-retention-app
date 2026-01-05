@@ -1080,7 +1080,8 @@ def main_app():
 
     # Churn rate by gender
     gender_map = {"F": "#60a5fa", "M": "#4ade80"}
-    plot_churn_rate(seg_df, 'GENDER', "Churn rate by gender", color_map=gender_map)
+    seg_df['GENDER_LABEL'] = seg_df['GENDER'].map({"F": "Female", "M": "Male"}).fillna(seg_df['GENDER'])
+    plot_churn_rate(seg_df, 'GENDER_LABEL', "Churn rate by gender", color_map={"Female": "#60a5fa", "Male": "#4ade80"})
 
     # Churn rate by number of enrolled classes (0–1, 2–3, 4+)
     class_cols = [c for c in ['ZUMBA', 'BODY_PUMP', 'PILATES', 'SPINNING'] if c in seg_df.columns]
