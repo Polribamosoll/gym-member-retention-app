@@ -1078,6 +1078,7 @@ def main_app():
             paper_bgcolor="#0a0a0a",
             xaxis=dict(gridcolor="#2a2a2a", zeroline=False),
             yaxis=dict(gridcolor="#2a2a2a", zeroline=False),
+            legend=dict(font=dict(color="#e5e7eb")),
         )
         st.plotly_chart(fig_evo, use_container_width=True)
 
