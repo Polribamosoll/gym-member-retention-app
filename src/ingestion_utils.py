@@ -3,6 +3,7 @@ import os
 from io import StringIO, BytesIO
 import numpy as np
 import warnings as warnings_module
+import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
 from pandas import CategoricalDtype
@@ -40,7 +41,7 @@ def load_data(file_path_or_object: Union[str, StringIO, BytesIO]) -> Tuple[pd.Da
         if hasattr(file_path_or_object, 'name'):
             file_extension = os.path.splitext(file_path_or_object.name)[1].lower()
         else:
-            file_extension = '.csv'
+            file_extension = '.csv' 
         file_obj = file_path_or_object
 
     df = None
@@ -179,14 +180,14 @@ def load_data(file_path_or_object: Union[str, StringIO, BytesIO]) -> Tuple[pd.Da
                     else:
                         file_obj.seek(0)
                         df = pd.read_csv(file_obj, delimiter=delimiter, encoding=encoding, engine='python')
-                    if df.empty or df.shape[1] == 1: 
+                    if df.empty or df.shape[1] == 1:
                         continue
                     break
                 except Exception as e:
                     warnings.append(f"Fallback CSV loading failed with delimiter '{delimiter}' and encoding '{encoding}': {e}")
             if df is not None:
                 break
-
+    
     if df is None:
         raise ValueError("Could not load the file with common encodings or delimiters after multiple attempts.")
 
@@ -238,19 +239,62 @@ def infer_and_coerce_datatypes(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str
                 warnings.append(f"Column '{col}' was coerced to numeric, but {100 * (1 - numeric_ratio):.2f}% of values were unparseable.")
             continue
 
-        # Try to convert to datetime
-        with warnings_module.catch_warnings():
-            warnings_module.filterwarnings("ignore", message="Could not infer format", category=UserWarning)
-            warnings_module.filterwarnings("ignore", message="Parsing dates in .* format when dayfirst=True was specified", category=UserWarning)
-            datetime_series = pd.to_datetime(df_coerced[col], errors='coerce', dayfirst=True)
-        datetime_ratio = datetime_series.notna().sum() / len(df_coerced)
+        # Try to convert to datetime - flexible parsing for mixed formats
+        datetime_series = None
+        datetime_ratio = 0
 
-        if datetime_ratio > 0.8: # Heuristic: 80% non-null datetime values
-            df_coerced[col] = datetime_series
-            inferred_dtypes[col] = 'datetime64[ns]'
-            if datetime_ratio < 1.0:
-                warnings.append(f"Column '{col}' was coerced to datetime, but {100 * (1 - datetime_ratio):.2f}% of values were unparseable or in inconsistent formats.")
-            continue
+        # Check for date-like column names to lower the threshold
+        date_column_names = ['date', 'time', 'datetime', 'timestamp', 'created', 'updated', 'start', 'end', 'birth', 'visit', 'last', 'first', 'join', 'join_date', 'registration', 'enrollment']
+        is_date_column = any(keyword.lower() in col.lower() for keyword in date_column_names)
+
+        # For date columns or when we suspect dates, try flexible parsing
+        if is_date_column or df_coerced[col].astype(str).str.match(r'.*\d{4}.*').any():  # Contains 4-digit year
+            # Try to parse each value individually with multiple formats
+            parsed_dates = []
+
+            # Common date formats to try for each value
+            date_formats = [
+                '%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y', '%d-%m-%Y', '%m-%d-%Y',
+                '%Y/%m/%d', '%d.%m.%Y', '%m.%d.%Y', '%d %m %Y', '%m %d %Y'
+            ]
+
+            for val in df_coerced[col]:
+                val_str = str(val).strip()
+                parsed = None
+
+                # Try each format for this value
+                for fmt in date_formats:
+                    try:
+                        parsed = pd.to_datetime(val_str, format=fmt, errors='coerce')
+                        if not pd.isna(parsed):
+                            break
+                    except:
+                        continue
+
+                # If no explicit format worked, try inferential parsing
+                if pd.isna(parsed):
+                    try:
+                        parsed = pd.to_datetime(val_str, errors='coerce', dayfirst=False)
+                        if pd.isna(parsed):
+                            parsed = pd.to_datetime(val_str, errors='coerce', dayfirst=True)
+                    except:
+                        parsed = pd.NaT
+
+                parsed_dates.append(parsed)
+
+            datetime_series = pd.Series(parsed_dates, index=df_coerced.index)
+            datetime_ratio = datetime_series.notna().sum() / len(df_coerced)
+
+            # Lower threshold for date columns
+            threshold = 0.3 if is_date_column else 0.8
+
+            if datetime_ratio > threshold:
+                # Standardize to consistent format
+                df_coerced[col] = datetime_series.dt.strftime('%Y-%m-%d')
+                inferred_dtypes[col] = 'string'  # Store as standardized string format
+                if datetime_ratio < 1.0:
+                    warnings.append(f"Column '{col}' was coerced to datetime, but {100 * (1 - datetime_ratio):.2f}% of values were unparseable. Standardized to YYYY-MM-DD format.")
+                continue
 
         # Try to convert to boolean
         bool_temp_series = df_coerced[col].astype(str).str.lower().str.strip()
@@ -289,20 +333,38 @@ def infer_column_roles(df: pd.DataFrame) -> Dict[str, str]:
         Dict[str, str]: A dictionary where keys are column names and values are their inferred roles.
     """
     column_roles: Dict[str, str] = {}
-    
+
     for col in df.columns:
+        # Check for datetime columns (native datetime types)
         if pd.api.types.is_datetime64_any_dtype(df[col]):
             column_roles[col] = 'Date/time'
+        # Check for string columns that contain standardized dates (YYYY-MM-DD format)
+        elif pd.api.types.is_string_dtype(df[col]):
+            # Check if column name suggests it's a date
+            date_column_names = ['date', 'time', 'datetime', 'timestamp', 'created', 'updated', 'start', 'end', 'birth', 'visit', 'last', 'first', 'join', 'join_date', 'registration', 'enrollment']
+            is_date_column = any(keyword.lower() in col.lower() for keyword in date_column_names)
+
+            # Check if values look like standardized dates (YYYY-MM-DD)
+            if is_date_column and df[col].notna().any():
+                sample_values = df[col].dropna().head(5)
+                # Check if sample values match YYYY-MM-DD pattern
+                date_pattern = r'^\d{4}-\d{2}-\d{2}$'
+                if sample_values.str.match(date_pattern).all():
+                    column_roles[col] = 'Date/time'
+                    continue
+
+            # Otherwise treat as regular string column
+            if df[col].nunique() / len(df[col]) > 0.9 and len(df[col]) > 10: # Heuristic for identifier: >90% unique and more than 10 rows
+                column_roles[col] = 'Identifier'
+            else:
+                column_roles[col] = 'Categorical dimension'
         elif pd.api.types.is_numeric_dtype(df[col]):
             if df[col].nunique() / len(df[col]) > 0.9 and len(df[col]) > 10: # Heuristic for identifier: >90% unique and more than 10 rows
                 column_roles[col] = 'Identifier'
             else:
                 column_roles[col] = 'Numeric metric'
-        elif isinstance(df[col].dtype, CategoricalDtype) or pd.api.types.is_string_dtype(df[col]):
-            if df[col].nunique() / len(df[col]) > 0.9 and len(df[col]) > 10: # Heuristic for identifier: >90% unique and more than 10 rows
-                column_roles[col] = 'Identifier'
-            else:
-                column_roles[col] = 'Categorical dimension'
+        elif isinstance(df[col].dtype, CategoricalDtype):
+            column_roles[col] = 'Categorical dimension'
         else:
             column_roles[col] = 'Other'
 
@@ -320,7 +382,7 @@ def detect_orientation(df: pd.DataFrame) -> str:
     """
     numeric_cols = df.select_dtypes(include=['number']).columns
     non_numeric_cols = df.select_dtypes(exclude=['number']).columns
-
+    
     potential_value_cols = ['value', 'metric', 'data', 'count']
     potential_variable_cols = ['variable', 'category', 'type', 'attribute']
 
