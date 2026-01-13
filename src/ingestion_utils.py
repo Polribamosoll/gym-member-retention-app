@@ -156,6 +156,7 @@ def infer_and_coerce_datatypes(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str
         # Try to convert to datetime
         with warnings_module.catch_warnings():
             warnings_module.filterwarnings("ignore", message="Could not infer format", category=UserWarning)
+            warnings_module.filterwarnings("ignore", message="Parsing dates in .* format when dayfirst=True was specified", category=UserWarning)
             datetime_series = pd.to_datetime(df_coerced[col], errors='coerce', dayfirst=True)
         datetime_ratio = datetime_series.notna().sum() / len(df_coerced)
 
