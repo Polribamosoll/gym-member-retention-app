@@ -2,8 +2,10 @@ import pandas as pd
 import os
 from io import StringIO, BytesIO
 import numpy as np
+import warnings as warnings_module
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple, Union
+from pandas import CategoricalDtype
 
 @dataclass
 class IngestionMetadata:
@@ -152,7 +154,9 @@ def infer_and_coerce_datatypes(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str
             continue
 
         # Try to convert to datetime
-        datetime_series = pd.to_datetime(df_coerced[col], errors='coerce', dayfirst=True)
+        with warnings_module.catch_warnings():
+            warnings_module.filterwarnings("ignore", message="Could not infer format", category=UserWarning)
+            datetime_series = pd.to_datetime(df_coerced[col], errors='coerce', dayfirst=True)
         datetime_ratio = datetime_series.notna().sum() / len(df_coerced)
 
         if datetime_ratio > 0.8: # Heuristic: 80% non-null datetime values
@@ -208,7 +212,7 @@ def infer_column_roles(df: pd.DataFrame) -> Dict[str, str]:
                 column_roles[col] = 'Identifier'
             else:
                 column_roles[col] = 'Numeric metric'
-        elif pd.api.types.is_categorical_dtype(df[col]) or pd.api.types.is_string_dtype(df[col]):
+        elif isinstance(df[col].dtype, CategoricalDtype) or pd.api.types.is_string_dtype(df[col]):
             if df[col].nunique() / len(df[col]) > 0.9 and len(df[col]) > 10: # Heuristic for identifier: >90% unique and more than 10 rows
                 column_roles[col] = 'Identifier'
             else:
