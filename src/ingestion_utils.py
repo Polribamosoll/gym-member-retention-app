@@ -50,6 +50,35 @@ def load_data(file_path_or_object: Union[str, StringIO, BytesIO]) -> Tuple[pd.Da
     if file_extension in ['.csv', '.tsv', '.txt']:
         file_type = file_extension[1:]
         delimiters = [',', '\t', ';', '|']
+
+        # First, try to read the file content to analyze delimiters
+        file_content = None
+        for encoding in encodings:
+            try:
+                if isinstance(file_obj, str):
+                    with open(file_obj, 'r', encoding=encoding) as f:
+                        file_content = f.read()
+                else:
+                    file_obj.seek(0)
+                    file_content = file_obj.read().decode(encoding)
+                break
+            except Exception:
+                continue
+
+        if file_content:
+            # Count delimiter occurrences to find the most common one
+            delimiter_counts = {}
+            for delimiter in delimiters:
+                count = file_content.count(delimiter)
+                if count > 0:
+                    delimiter_counts[delimiter] = count
+
+            if delimiter_counts:
+                # Sort delimiters by frequency (most frequent first)
+                sorted_delimiters = sorted(delimiter_counts.items(), key=lambda x: x[1], reverse=True)
+                delimiters = [d[0] for d in sorted_delimiters] + [d for d in delimiters if d not in delimiter_counts]
+
+        # Now try loading with the prioritized delimiters
         for encoding in encodings:
             for delimiter in delimiters:
                 try:
@@ -58,16 +87,72 @@ def load_data(file_path_or_object: Union[str, StringIO, BytesIO]) -> Tuple[pd.Da
                     else:
                         file_obj.seek(0)
                         df = pd.read_csv(file_obj, delimiter=delimiter, encoding=encoding, engine='python')
-                    
-                    if df.empty or df.shape[1] == 1: 
+
+                    if df.empty or df.shape[1] == 1:
                         if df.shape[1] == 1: # If only one column, delimiter was likely wrong
                             warnings.append(f"Attempted to load with delimiter '{delimiter}' and encoding '{encoding}', but resulted in a single column. Trying other options.")
                         continue # Try next delimiter/encoding
+
+                    # Additional check: ensure consistent number of columns across non-empty rows
+                    non_empty_rows = df.dropna(how='all')
+                    if len(non_empty_rows) > 1:
+                        col_counts = non_empty_rows.apply(lambda row: row.notna().sum(), axis=1)
+                        if col_counts.std() > 1:  # If there's significant variation in column counts
+                            warnings.append(f"Delimiter '{delimiter}' with encoding '{encoding}' resulted in inconsistent column counts across rows. Trying other options.")
+                            continue
+
                     break # Successfully loaded
                 except Exception as e:
                     warnings.append(f"Failed to load with delimiter '{delimiter}' and encoding '{encoding}': {e}")
             if df is not None: # If loaded with any delimiter for this encoding, break encoding loop
                 break
+
+        # If no delimiter worked consistently, try a fallback approach for mixed delimiters
+        if df is None or (df.shape[1] == 1 and len(df) > 1):
+            warnings.append("File appears to have inconsistent delimiters. Attempting fallback parsing.")
+            # Try to parse manually by detecting delimiters per row
+            try:
+                if file_content:
+                    lines = file_content.strip().split('\n')
+                    if len(lines) > 1:
+                        # Try to determine expected number of columns from header
+                        header = lines[0]
+                        max_cols = 0
+                        best_delimiter = None
+
+                        for delimiter in delimiters:
+                            col_count = len(header.split(delimiter))
+                            if col_count > max_cols:
+                                max_cols = col_count
+                                best_delimiter = delimiter
+
+                        if best_delimiter and max_cols > 1:
+                            # Parse each line with the best delimiter, fallback to others if needed
+                            parsed_rows = []
+                            for line in lines:
+                                # Try the best delimiter first
+                                parts = line.split(best_delimiter)
+                                if len(parts) == max_cols:
+                                    parsed_rows.append(parts)
+                                else:
+                                    # Try other delimiters
+                                    found = False
+                                    for alt_delim in delimiters:
+                                        if alt_delim != best_delimiter:
+                                            alt_parts = line.split(alt_delim)
+                                            if len(alt_parts) == max_cols:
+                                                parsed_rows.append(alt_parts)
+                                                found = True
+                                                break
+                                    if not found:
+                                        # If no delimiter works, keep as single column
+                                        parsed_rows.append([line])
+
+                            if parsed_rows:
+                                df = pd.DataFrame(parsed_rows[1:], columns=parsed_rows[0])  # Skip header row for data
+                                warnings.append(f"Successfully parsed file with mixed delimiters using fallback method.")
+            except Exception as e:
+                warnings.append(f"Fallback parsing also failed: {e}")
 
     elif file_extension in ['.xlsx', '.xls']:
         file_type = file_extension[1:]
