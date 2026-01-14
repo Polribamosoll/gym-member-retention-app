@@ -351,7 +351,87 @@ def login_page():
                         st.success(_("account_created_successfully"))
                         st.balloons()
                         st.session_state["show_upload_after_register"] = True
-        
+
+        # File Sanitization using Ingestion Bridge
+        if st.session_state.get("show_upload_after_register"):
+            st.markdown("---")
+            st.markdown("### 📁 Sanitize Your Data Files")
+            st.markdown("*Upload any CSV, Excel, or text file to clean and standardize it using our ingestion bridge.*")
+            st.caption("The ingestion bridge will automatically detect file type, fix encoding issues, standardize data types, and provide a clean, sanitized version of your data.")
+
+            # Show file uploader only if not yet processed
+            if "sanitized_df" not in st.session_state:
+                sanitize_file = st.file_uploader(
+                    "Upload file to sanitize",
+                    key="sanitize_file_uploader",
+                    type=['csv', 'xlsx', 'xls', 'tsv', 'txt'],
+                    help="Supported formats: CSV, Excel (.xlsx/.xls), TSV, TXT"
+                )
+
+                if sanitize_file is not None:
+                    if st.button("🚀 Process File", use_container_width=True):
+                        with st.spinner("Processing file through ingestion bridge..."):
+                            try:
+                                # Import the ingestion bridge function
+                                from src.ingestion_utils import process_gym_data
+
+                                # Process the file through the ingestion bridge
+                                processed_df, metadata = process_gym_data(sanitize_file)
+
+                                # Store results in session state
+                                st.session_state["sanitized_df"] = processed_df
+                                st.session_state["sanitized_metadata"] = metadata
+                                st.session_state["original_filename"] = sanitize_file.name
+
+                                st.success("✅ File successfully processed through the ingestion bridge!")
+                                st.rerun()
+
+                            except Exception as e:
+                                st.error(f"❌ Error processing file: {str(e)}")
+                                st.error("Please check your file format and try again.")
+
+            # Display column analysis if processing is complete
+            if "sanitized_df" in st.session_state and "sanitized_metadata" in st.session_state:
+                st.markdown("---")
+                st.markdown("### 📊 Column Analysis")
+
+                processed_df = st.session_state["sanitized_df"]
+                metadata = st.session_state["sanitized_metadata"]
+
+                # Column roles summary
+                roles_df = pd.DataFrame(list(metadata.column_roles.items()), columns=['Column', 'Role'])
+                st.dataframe(roles_df, hide_index=True, use_container_width=True)
+
+                # Download button
+                col1, col2 = st.columns(2)
+                with col1:
+                    # Prepare CSV download
+                    csv_buffer = io.BytesIO()
+                    processed_df.to_csv(csv_buffer, index=False)
+                    csv_buffer.seek(0)
+
+                    # Create download filename
+                    original_name = st.session_state.get("original_filename", "file")
+                    base_name = original_name.rsplit('.', 1)[0]
+                    download_name = f"{base_name}_sanitized.csv"
+
+                    st.download_button(
+                        label="📥 Download Sanitized CSV",
+                        data=csv_buffer,
+                        file_name=download_name,
+                        mime="text/csv",
+                        use_container_width=True,
+                        type="primary"
+                    )
+
+                with col2:
+                    # Option to clear results and upload another file
+                    if st.button("🗑️ Clear Results", use_container_width=True):
+                        for key in ["sanitized_df", "sanitized_metadata", "original_filename"]:
+                            if key in st.session_state:
+                                del st.session_state[key]
+                        st.rerun()
+
         # Upload CSVs after registration (from notebook)
         if st.session_state.get("show_upload_after_register"):
             st.markdown("---")
