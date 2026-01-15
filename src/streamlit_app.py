@@ -300,6 +300,34 @@ def login_page():
     .css-1lcbmhc .stSelectbox div[data-baseweb="select"] * {
         color: #ffffff !important;
     }
+    /* File uploader button styling */
+    .stFileUploader button {
+        color: #000000 !important;
+        background-color: #4ade80 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+        font-weight: bold !important;
+    }
+    .stFileUploader button:hover {
+        background-color: #22c55e !important;
+        border: 2px solid #22c55e !important;
+        color: #000000 !important;
+    }
+    .stFileUploader input[type="file"] {
+        color: #000000 !important;
+    }
+    .stFileUploader .stFileUploadButton {
+        color: #000000 !important;
+        background-color: #4ade80 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+        font-weight: bold !important;
+    }
+    .stFileUploader .stFileUploadButton:hover {
+        background-color: #22c55e !important;
+        border: 2px solid #22c55e !important;
+        color: #000000 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     # Centering the content
@@ -502,6 +530,34 @@ def main_app():
     }
     .css-1lcbmhc .stSelectbox div[data-baseweb="select"] * {
         color: #ffffff !important;
+    }
+    /* File uploader button styling */
+    .stFileUploader button {
+        color: #000000 !important;
+        background-color: #4ade80 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+        font-weight: bold !important;
+    }
+    .stFileUploader button:hover {
+        background-color: #22c55e !important;
+        border: 2px solid #22c55e !important;
+        color: #000000 !important;
+    }
+    .stFileUploader input[type="file"] {
+        color: #000000 !important;
+    }
+    .stFileUploader .stFileUploadButton {
+        color: #000000 !important;
+        background-color: #4ade80 !important;
+        border: 2px solid #4ade80 !important;
+        border-radius: 5px !important;
+        font-weight: bold !important;
+    }
+    .stFileUploader .stFileUploadButton:hover {
+        background-color: #22c55e !important;
+        border: 2px solid #22c55e !important;
+        color: #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
